@@ -97,32 +97,61 @@ Users can switch between both views dynamically.
 
 ## 📝 Real-Time Task Creation – `/addtask`
 
-Create and assign tasks instantly inside chat.
-
-### Channel Mode
-- Workspace selection
-- Project grouping
-- Task categorization
-- Assign-to members
-- Instant notification delivery
-
-### Bot Mode
-- Personal task creation
-- Immediate dashboard sync
-
-All tasks update in real-time across dashboards.
+WellTask allows structured task creation directly inside Zoho Cliq chat.
 
 ---
 
-## 👥 Automated Member Sync & Access Control
+### 👥 Channel Mode – Structured Team Task Creation
 
-- Admin auto-sync when bot is added
-- `/syncmembers` for manual member refresh
-- Dynamic allowed_user validation system
-- Automatic removal of removed members
-- Maintains dashboard data integrity
+When you type `/addtask` inside a channel:
+
+A dynamic task creation form opens with the following fields:
+
+- Task Name  
+- Workspace Selection  
+- Project Selection  
+- Column / Group Selection  
+- Priority (Low / Medium / High)  
+- Due Date  
+- Assign-To (Dropdown of existing channel members)
+
+Only members who are already present in the channel appear in the **Assign-To dropdown**.
+
+Once submitted:
+
+- The task appears instantly in the **Team Dashboard**
+- It syncs automatically to the assigned user’s **Personal Dashboard**
+- The assigned user receives a real-time notification containing:
+  - Task Name
+  - Due Date
+  - Priority
+  - Assigned By
+  - Workspace & Project details
+
+All updates happen in real-time via backend synchronization.
 
 ---
+
+### 👤 Personal Bot Mode
+
+When `/addtask` is used in personal bot chat:
+
+- Task is created as personal
+- Assign-To field is hidden
+- Automatically syncs with Personal Dashboard
+
+---
+
+### 🖼 Task Creation Interface
+
+<div align="center" style="overflow-x: auto; white-space: nowrap;">
+  <img src="https://i.ibb.co/S4FDR5Cf/addtaskform.png" width="450"/>
+  <img src="https://i.ibb.co/DPN5vbyX/Screenshot-2025-11-30-125540.png" width="450"/>
+</div>
+
+---
+
+
 
 ## 🎯 Focus Hub – Pomodoro Productivity Engine
 
