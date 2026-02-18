@@ -322,6 +322,12 @@ When **Break** is clicked:
 - Runs completely in background
 - No manual intervention required
 
+Once the break duration is completed:
+
+- The focus session automatically resumes
+- Continues tracking for the same task
+- No need to restart manually
+
 All actions update the Focus Hub dashboard in real-time.
 
 ---
