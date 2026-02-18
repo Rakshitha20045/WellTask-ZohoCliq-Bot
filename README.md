@@ -23,7 +23,7 @@ Designed with security, scalability, and automation in mind, WellTask follows re
 
 ## 🔐 Secure Access & Identity Verification
 
-<img src="YOUR_SECURITY_IMAGE_LINK_HERE" width="900"/>
+<img src="https://ibb.co/v6TFNXXv" width="900"/>
 
 Before granting dashboard access, WellTask performs identity verification and access validation.
 
