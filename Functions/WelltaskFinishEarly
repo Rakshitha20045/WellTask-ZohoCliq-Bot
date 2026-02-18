@@ -1,0 +1,36 @@
+
+response = Map();
+// 1. Get User ID
+userId = user.get("id");
+// 2. Prepare URL
+url = "";
+// 3. Generate unique command ID
+cmdId = zoho.currenttime.toLong().toString();
+// 4. Construct Payload
+payload = Map();
+fields = Map();
+fields.put("command",{"stringValue":"FINISH_EARLY"});
+fields.put("commandId",{"stringValue":cmdId});
+payload.put("fields",fields);
+headers = Map();
+headers.put("Content-Type","application/json");
+// 5. Invoke Firestore API
+try 
+{
+	resp = invokeurl
+	[
+		url :url
+		type :PATCH
+		parameters:payload.toString()
+		headers:headers
+	];
+}
+catch (e)
+{
+	info "ERROR: [WelltaskFinishEarly] API Call Failed: " + e.toString();
+}
+// 6. Return UI Response
+response.put("text","✅ Task completed early! Dashboard updated.");
+response.put("type","banner");
+response.put("status","success");
+return response;
