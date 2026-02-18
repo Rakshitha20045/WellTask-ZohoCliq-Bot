@@ -119,7 +119,7 @@ Users can switch between both views dynamically.
 
 ## 📝 Real-Time Task Creation – `/addtask`
 
-WellTask allows structured task creation directly inside Zoho Cliq chat.
+WellTask allows structured task creation directly inside Zoho Cliq chat with real-time cross-dashboard synchronization.
 
 ---
 
@@ -137,20 +137,26 @@ A dynamic task creation form opens with the following fields:
 - Due Date  
 - Assign-To (Dropdown of existing channel members)
 
-Only members who are already present in the channel appear in the **Assign-To dropdown**.
+Only members who are already present in the channel appear in the **Assign-To dropdown**, ensuring secure and valid assignment.
 
-Once submitted:
+---
 
-- The task appears instantly in the **Team Dashboard**
-- It syncs automatically to the assigned user’s **Personal Dashboard**
-- The assigned user receives a real-time notification containing:
+### 🔄 Intelligent Cross-Dashboard Sync (Key Feature)
+
+When a manager or team member assigns a task via the form:
+
+- The task is added to the **Channel Shared Dashboard**
+- Simultaneously added to the **Assigned User’s Personal Dashboard**
+- The assigned member receives a detailed real-time notification including:
   - Task Name
   - Due Date
-  - Priority
+  - Priority Level
   - Assigned By
   - Workspace & Project details
 
-All updates happen in real-time via backend synchronization.
+This ensures full transparency and seamless collaboration between team and personal workflows.
+
+Both dashboards stay synchronized in real-time via backend updates.
 
 ---
 
@@ -161,6 +167,7 @@ When `/addtask` is used in personal bot chat:
 - Task is created as personal
 - Assign-To field is hidden
 - Automatically syncs with Personal Dashboard
+- No channel visibility
 
 ---
 
