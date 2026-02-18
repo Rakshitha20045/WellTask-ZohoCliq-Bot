@@ -13,134 +13,33 @@
 
 ## 📌 Overview
 
-WellTask is a production-ready productivity bot built for Zoho Cliq that enables seamless **personal task management** and **team collaboration** directly within chat.
+WellTask is a real-time productivity bot built for Zoho Cliq that enables seamless **personal task management** and **team collaboration** directly within chat.
 
-It combines task automation, real-time dashboards, Pomodoro-based focus tracking, deadline alerts, and productivity analytics — all without leaving the Zoho Cliq workspace.
+It integrates dashboards, Pomodoro-based focus tracking, automated alerts, and analytics — all inside Zoho Cliq without switching applications.
 
-Designed with security, scalability, and automation in mind, WellTask follows real-world SaaS architecture principles.
+Built with real-time architecture and secure access validation.
 
 ---
 
 ## 🔐 Secure Access & Identity Verification
 
-<img src="https://i.ibb.co/1tPgCzzJ/welltask-security-check.png" width="900"/>
+<img src="PASTE_DIRECT_SECURITY_IMAGE_LINK_HERE" width="900"/>
 
-Before granting dashboard access, WellTask performs identity verification and access validation.
+Before granting dashboard access, WellTask performs identity verification and secure access validation.
 
 ### Security Highlights
 - Verified user authentication
 - Role-based access control
-- Automatic admin sync
-- Allowed-user validation system
-- Daily member integrity check (9:30 AM scheduler)
-- Auto-removal of unauthorized users
-
-This ensures secure separation between personal boards and team dashboards.
+- Automatic admin synchronization
+- Scheduled 9:30 AM member integrity check
+- Automatic removal of unauthorized users
+- Secure separation between personal and team boards
 
 ---
 
 ## 📊 Smart Dashboard Access – `/welltask`
 
-<img src="https://i.ibb.co/d4k5GfbF/Screenshot-2025-11-30-130301.png" width="900"/>
-
-- Slash command-based access
-- Channel → Team Dashboard
-- Bot Chat → Personal Dashboard
-- Preview mode before full access
-- One-click dashboard launch
-
----
-
-## 📝 Real-Time Task Creation – `/addtask`
-
-<img src="https://i.ibb.co/DPN5vbyX/Screenshot-2025-11-30-125540.png" width="900"/>
-
-Create and assign tasks instantly inside chat.
-
-### Channel Mode
-- Workspace selection
-- Project selection
-- Group tagging
-- Assign-to members
-- Instant notification to assigned users
-
-### Bot Mode
-- Personal task creation
-- Auto-sync with Personal Dashboard
-
-All tasks sync in real-time across dashboards.
-
----
-
-## 👥 Automated Member Sync & Access Control
-
-<img src="https://i.ibb.co/WW5NGcB3/Screenshot-2025-11-30-125630.png" width="900"/>
-
-- Admin auto-sync when bot is added
-- Dropdown-based member sync
-- `/syncmembers` for manual refresh
-- Daily scheduler to detect removed users
-- Dynamic allowed_user filtering
-
-This prevents unauthorized dashboard access and maintains data integrity.
-
----
-
-## ⏰ Daily Smart Deadline Alerts
-
-- Automated morning task evaluation
-- Alerts for:
-  - Due today
-  - Overdue tasks
-  - Urgent tasks
-- Notification without opening dashboard
-
-Improves accountability and task visibility.
-
----
-
-## 🎯 Focus Hub – Pomodoro Productivity Engine
-
-<img src="https://i.ibb.co/MYx751W/Screenshot-2025-11-30-125610.png" width="900"/>
-
-A built-in focus tracking system to boost productivity.
-
-### Features
-- Customizable focus duration
-- Short & long break configuration
-- Real-time "Focus Started" notifications
-- Automated break alerts
-- Take Break / Skip Break / Complete Early
-- Break time excluded from productivity metrics
-- Restorable completed tasks
-
-Focus sessions are tightly integrated with task analytics.
-
----
-
-## 📈 Productivity Analytics & Insights
-
-<img src="https://i.ibb.co/zTRksWxm/Screenshot-2025-11-30-125707.png" width="900"/>
-
-### Activity Reports
-- Daily productivity summary
-- Weekly performance tracking
-- Monthly analytics overview
-- Focus minutes tracking
-- Pomodoro counts
-- Break usage patterns
-- Productivity streaks
-
-<img src="https://i.ibb.co/3520qFT0/Screenshot-2025-11-30-125721.png" width="900"/>
-
-### Task Distribution Analysis
-- Identifies high-effort tasks
-- Visual distribution of time allocation
-- Helps optimize workload balance
-
----
-
-## 🔄 Dual Dashboard Mode
+WellTask provides **dual dashboard modes** depending on context.
 
 ### 👤 Personal Mode (Bot Chat)
 - Personal Task Manager
@@ -149,31 +48,115 @@ Focus sessions are tightly integrated with task analytics.
 
 ### 👥 Team Mode (Channel)
 - Team Task Dashboard
-- Role-based access
-- Collaboration-first interface
-- Focus Hub hidden in team mode for structured workflow
+- Role-based access control
+
+### 🔄 Views Available
+- **Kanban View**
+- **List View**
+
+Both views allow dynamic task tracking and structured workflow management.
+
+<div align="center" style="overflow-x: auto; white-space: nowrap;">
+  <img src="https://i.ibb.co/d4k5GfbF/Screenshot-2025-11-30-130301.png" width="450"/>
+  <img src="https://i.ibb.co/DPN5vbyX/Screenshot-2025-11-30-125540.png" width="450"/>
+</div>
 
 ---
 
-## 🏗️ System Architecture
+## 📝 Real-Time Task Creation – `/addtask`
 
-- Built using Zoho Cliq Bot + Widget Framework
-- Backend logic implemented in Deluge scripting
-- Real-time UI rendering via widget components
-- Cron-based scheduler for daily integrity checks
-- Role-based access model using allowed_user logic
-- Stateful productivity tracking system
+Create and assign tasks instantly inside chat.
+
+### Channel Mode
+- Workspace selection
+- Project grouping
+- Task categorization
+- Assign-to members
+- Instant notification delivery
+
+### Bot Mode
+- Personal task creation
+- Immediate dashboard sync
+
+All tasks update in real-time across dashboards.
 
 ---
 
-## 🎯 Key Engineering Strengths
+## 👥 Automated Member Sync & Access Control
 
+- Admin auto-sync when bot is added
+- `/syncmembers` for manual member refresh
+- Dynamic allowed_user validation system
+- Automatic removal of removed members
+- Maintains dashboard data integrity
+
+---
+
+## 🎯 Focus Hub – Pomodoro Productivity Engine
+
+<img src="https://i.ibb.co/MYx751W/Screenshot-2025-11-30-125610.png" width="900"/>
+<img src="https://i.ibb.co/WW5NGcB3/Screenshot-2025-11-30-125630.png" width="900"/>
+
+A fully integrated focus tracking system designed to boost productivity.
+
+### Features
+- Customizable focus duration
+- Short & long break configuration
+- Real-time "Focus Started" notifications
+- Automated break alerts
+- Skip break / Complete early options
+- Break time excluded from productivity metrics
+- Restorable completed tasks
+
+---
+
+## 📈 Productivity Analytics
+
+<img src="https://i.ibb.co/zTRksWxm/Screenshot-2025-11-30-125707.png" width="900"/>
+<img src="https://i.ibb.co/3520qFT0/Screenshot-2025-11-30-125721.png" width="900"/>
+
+- Daily productivity reports
+- Weekly & Monthly insights
+- Pomodoro tracking
+- Focus minutes tracking
+- Break usage analytics
+- Task time distribution visualization
+
+---
+
+## ⚙️ Tech Stack
+
+### 🖥 Frontend
+- 🌐 HTML  
+- 🎨 CSS  
+- ⚡ JavaScript  
+
+Frontend deployed via **Vercel** using GitHub integration and embedded inside Zoho Cliq as a widget.
+
+### 🔥 Backend
+- Firebase (Realtime Database)
 - Real-time synchronization architecture
-- Secure user validation system
-- Automated workflow management
+- Secure data handling
+
+### 🧠 Zoho Cliq Integration
+- Deluge scripting (Zoho's native programming language)
+- Bot & Widget framework
+- Slash-command handling
+- Scheduler-based automation
+- Role-based access logic
+
+---
+
+## 🚀 Deployment & Architecture Highlights
+
+- Frontend deployed on Vercel via GitHub CI/CD
+- Firebase backend for real-time updates
+- Integrated inside Zoho Cliq environment
 - Event-driven command handling
+- Cron-based scheduler (9:30 AM integrity check)
+- Secure user validation system
+- Real-time dashboard synchronization
 - Separation of personal and team contexts
-- Scalable dashboard rendering logic
 
 ---
 
@@ -182,26 +165,6 @@ Focus sessions are tightly integrated with task analytics.
 Shortlisted in **Zoho CliqTrix ’26**  
 Top 35 Teams – Zoho Cliq Track
 
-Built with real-world SaaS product design principles and automation-focused workflow engineering.
+Designed with real-world SaaS product principles and automation-focused workflow engineering.
 
 ---
-
-## 🔮 Future Enhancements
-
-- Advanced reporting dashboard
-- Cross-workspace analytics
-- Email & external integrations
-- Role-based advanced filtering
-- Mobile UI optimization
-- Performance scaling improvements
-
----
-
-## 👩‍💻 Author
-
-Rakshitha A  
-B.Tech – Artificial Intelligence & Data Science  
-Zoho CliqTrix ’26 Shortlisted Participant  
-
----
-
