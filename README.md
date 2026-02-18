@@ -416,9 +416,20 @@ Frontend deployed via **Vercel** using GitHub integration and embedded inside Zo
 
 ## 🏆 Achievement
 
-Shortlisted in **Zoho CliqTrix ’26**  
-Top 35 Teams – Zoho Cliq Track
-
-Designed with real-world SaaS product principles and automation-focused workflow engineering.
+Shortlisted in **Round-1 of Zoho CliqTrix ’26**  
+(Top 35 Teams – Zoho Cliq Track)
 
 ---
+
+## 🛠 Engineering Challenges
+
+- **API Integration:** Managed integration between Zoho Cliq bot, widget, and Firebase backend.
+- **Complex Debugging:** A small issue in one module impacted others — required structured isolation and testing.
+- **New Ecosystem Learning:** Adapted to Deluge scripting and Zoho Cliq event-driven architecture.
+- **Real-Time Sync Issues:** Ensured consistent dashboard updates across personal and channel modes.
+
+These challenges strengthened my understanding of real-time systems, secure access control, and scalable bot architecture.
+
+---
+
+
