@@ -1,0 +1,35 @@
+
+targetName = target.get("name");
+info targetName;
+inputValues = form.get("values");
+info inputValues;
+actions = list();
+if(targetName.containsIgnoreCase("asset-type"))
+{
+	fieldValue = inputValues.get("asset-type").get("value");
+	info fieldValue;
+	if(fieldValue == "laptop")
+	{
+		actions.add({"type":"add_after","name":"asset-type","input":{"type":"select","name":"os-type","label":"Laptop Type","hint":"Choose your preferred OS Type","placeholder":"Ubuntu","mandatory":true,"options":{{"label":"Mac OS X","value":"mac"},{"label":"Windows","value":"windows"},{"label":"Ubuntu","value":"ubuntu"}}}});
+		actions.add({"type":"remove","name":"mobile-os"});
+		actions.add({"type":"remove","name":"mobile-list"});
+	}
+	else if(fieldValue == "mobile")
+	{
+		actions.add({"type":"add_after","name":"asset-type","input":{"type":"select","name":"mobile-os","label":"Mobile OS","hint":"Choose your preferred mobile OS","mandatory":true,"placeholder":"Android","options":{{"label":"Android","value":"android"},{"label":"iOS","value":"ios"}},"trigger_on_change":true}});
+		actions.add({"type":"remove","name":"os-type"});
+	}
+}
+else if(targetName.containsIgnoreCase("mobile-os"))
+{
+	fieldValue = inputValues.get("asset-type").get("value");
+	if(fieldValue != null)
+	{
+		actions.add({"type":"add_after","name":"mobile-os","input":{"type":"dynamic_select","name":"mobile-list","label":"Mobile Device","mandatory":true,"placeholder":"Choose your preferred mobile device"}});
+	}
+	else
+	{
+		actions.add({"type":"remove","name":"mobile-list"});
+	}
+}
+return {"type":"form_modification","actions":actions};
