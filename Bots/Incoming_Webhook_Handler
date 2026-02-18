@@ -1,0 +1,70 @@
+
+// --- 3. WEBHOOK HANDLER (GET-SAFE & ROUTING LOGIC) ---
+response = Map();
+final_data = Map();
+// 1. CONSOLIDATE DATA SOURCES (Reads GET params first)
+try 
+{
+	if(params != null && !params.isEmpty())
+	{
+		final_data.putAll(params);
+	}
+	else if(body != null)
+	{
+		try 
+		{
+			final_data.putAll(body);
+		}
+		catch (e)
+		{
+			if(body.toString().startsWith("{"))
+			{
+				final_data.putAll(body.toMap());
+			}
+		}
+	}
+}
+catch (e)
+{
+	info "Data Consolidation Error: " + e;
+}
+// ============================================================
+// LOGIC A: DASHBOARD NOTIFICATION (Post to Mapped Channel)
+// ============================================================
+if(final_data.containKey("channel_id"))
+{
+	cid = final_data.get("channel_id");
+	txt = final_data.get("text");
+	if(cid != null && cid != "")
+	{
+		try 
+		{
+			// Posts notification using the mapped Channel ID and cliq_access connection
+			zoho.cliq.postToChannel(cid,txt,"cliq_access");
+		}
+		catch (postErr)
+		{
+			info "❌ Failed to post notification: " + postErr.toString();
+		}
+	}
+	return Map();
+	// Stop processing
+}
+// ============================================================
+// LOGIC B: FOCUS HUB (Existing Timer Events) - FALLBACK
+// ============================================================
+else
+{
+	// This is where your existing Focus Hub code resides.
+	// It will run if the incoming payload does not contain a channel_id.
+	type = final_data.get("type");
+	if(type == "start")
+	{
+		response.put("text","⚡ Focus Mode On...");
+	}
+	else if(type == "end")
+	{
+		response.put("text","🎉 Session Complete!");
+	}
+	return response;
+}
