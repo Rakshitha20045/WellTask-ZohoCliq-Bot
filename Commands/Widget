@@ -1,0 +1,83 @@
+
+// ============================================================
+// WELLTASK SECURE WIDGET HANDLER
+// ============================================================
+// 1. GET USER DATA
+u_email = ifnull(user.get("email"),"");
+u_id = ifnull(user.get("id"),"");
+u_name = ifnull(user.get("first_name"),"User");
+// 2. SET DEFAULTS
+board_mode = "personal";
+channel_id = "";
+board_id = u_id;
+// Default to User ID for personal boards
+// 3. CHECK CHAT CONTEXT (For Team Boards)
+if(!isNull(chat))
+{
+	if(chat.containKey("type"))
+	{
+		type = chat.get("type");
+		// Check if widget is opened in a Channel or Group
+		if(type == "channel" || type == "group")
+		{
+			board_mode = "team";
+			if(chat.containKey("id"))
+			{
+				// In team mode, Board ID = Channel ID
+				channel_id = chat.get("id");
+				board_id = channel_id;
+			}
+		}
+	}
+}
+// 4. GENERATE SECURE TOKEN (4 PARTS)
+// 🔒 SECURITY: Add Time and Secret Salt
+current_time = zoho.currenttime.toLong();
+secret_salt = "";
+// This MUST match the check in your index.html
+// Structure: email::userID::timestamp::salt
+token_raw = u_email + "::" + u_id + "::" + current_time + "::" + secret_salt;
+secure_token = zoho.encryption.base64Encode(token_raw);
+// 5. BUILD URLS
+base_url = "";
+// Important: Pass all parameters needed for the authentication logic
+params = "?token=" + secure_token + "&mode=" + board_mode + "&boardid=" + board_id + "&channelId=" + channel_id;
+final_dashboard_url = base_url + "/index.html" + params;
+final_focus_url = base_url + "/focus.html" + params;
+// 6. CONFIGURE TABS
+current_tab = "dashboard";
+tabs = list();
+// Tab 1: Dashboard
+tab_dash = Map();
+tab_dash.put("label","Task Board");
+tab_dash.put("id","dashboard");
+tabs.add(tab_dash);
+// Tab 2: Focus Hub (Only show for Personal Mode)
+if(board_mode == "personal")
+{
+	tab_focus = Map();
+	tab_focus.put("label","Focus Hub");
+	tab_focus.put("id","focus_timer");
+	tabs.add(tab_focus);
+	// Open Focus tab if clicked directly
+	if(!isNull(target) && target.containKey("id") && target.get("id") == "focus_timer")
+	{
+		current_tab = "focus_timer";
+	}
+}
+// 7. SELECT URL BASED ON ACTIVE TAB
+target_url = final_dashboard_url;
+if(current_tab == "focus_timer")
+{
+	target_url = final_focus_url;
+}
+// 8. RETURN WIDGET RESPONSE
+webview = Map();
+webview.put("url",target_url);
+resp = Map();
+resp.put("type","applet");
+resp.put("data_type","web_view");
+resp.put("active_tab",current_tab);
+resp.put("tabs",tabs);
+resp.put("web_view",webview);
+return resp;
