@@ -1,0 +1,136 @@
+
+info "⏰ Scheduler Started: Daily Summary";
+projectId = "";
+botName = "welltask";
+todayDate = zoho.currentdate;
+// 1. FETCH BOARDS FROM FIRESTORE
+boardsUrl = "";
+response = invokeurl
+[
+	url :boardsUrl
+	type :GET
+];
+if(response.get("documents") == null)
+{
+	return;
+}
+// 2. LOOP THROUGH EACH USER'S BOARD
+for each  doc in response.get("documents")
+{
+	// A. EXTRACT USER ID FROM DOCUMENT NAME
+	fullPath = doc.get("name");
+	pathList = fullPath.toList("/");
+	// Extracts the ID (e.g., "753502365") from the path
+	userId = pathList.get(pathList.size() - 1).toString();
+	// Check if this looks like a valid ID (numeric)
+	if(userId.isNumber())
+	{
+		fields = doc.get("fields");
+		// Check if 'tasks' array exists
+		if(fields.get("tasks") != null && fields.get("tasks").get("arrayValue") != null)
+		{
+			// Get the list of tasks from your specific structure
+			tasksList = fields.get("tasks").get("arrayValue").get("values");
+			taskCount = 0;
+			taskMessageBody = "";
+			// 3. PROCESS EACH TASK
+			for each  tItem in tasksList
+			{
+				tData = tItem.get("mapValue").get("fields");
+				// --- SAFE DATA EXTRACTION ---
+				tName = "Untitled Task";
+				tPriority = "Low";
+				tDate = "";
+				tStatus = "Not Started";
+				if(tData.get("name") != null)
+				{
+					tName = tData.get("name").get("stringValue");
+				}
+				if(tData.get("priority") != null)
+				{
+					tPriority = tData.get("priority").get("stringValue");
+				}
+				if(tData.get("dueDate") != null)
+				{
+					tDate = tData.get("dueDate").get("stringValue");
+				}
+				if(tData.get("status") != null)
+				{
+					tStatus = tData.get("status").get("stringValue");
+				}
+				// -----------------------------
+				// 4. FILTER LOGIC
+				// Only show if NOT done
+				if(!tStatus.containsIgnoreCase("done") && !tStatus.containsIgnoreCase("completed"))
+				{
+					// Only process if there is a Due Date (e.g., "2025-11-22")
+					if(tDate != null && tDate.len() > 0)
+					{
+						// Convert String Date to Date Object
+						taskDateObj = tDate.toDate();
+						// Calculate difference between Today and Due Date
+						daysDiff = days360(todayDate,taskDateObj);
+						// LOGIC: Show if Overdue OR Due in next 7 days
+						if(daysDiff <= 7)
+						{
+							icon = "📅";
+							statusLabel = "(Upcoming)";
+							if(daysDiff < 0)
+							{
+								icon = "🔴";
+								statusLabel = "(Overdue)";
+							}
+							else if(daysDiff == 0)
+							{
+								icon = "🔥";
+								statusLabel = "(Due Today)";
+							}
+							else if(daysDiff == 1)
+							{
+								icon = "⚠️";
+								statusLabel = "(Tomorrow)";
+							}
+							taskCount = taskCount + 1;
+							taskMessageBody = taskMessageBody + icon + " *" + tName + "*\n";
+							taskMessageBody = taskMessageBody + "    " + statusLabel + " | Priority: " + tPriority + "\n\n";
+						}
+					}
+				}
+			}
+			// 5. SEND MESSAGE VIA CLIQ API
+			botApiUrl = "https://cliq.zoho.com/api/v2/bots/" + botName + "/message?user_id=" + userId;
+			if(taskCount > 0)
+			{
+				finalMsg = "👋 **Daily Summary for " + todayDate + "**\n";
+				finalMsg = finalMsg + "You have **" + taskCount + "** tasks pending:\n\n";
+				finalMsg = finalMsg + taskMessageBody;
+				finalMsg = finalMsg + "[Open Board](https://cliq.zoho.com)";
+				messagePayload = Map();
+				messagePayload.put("text",finalMsg);
+				apiResponse = invokeurl
+				[
+					url :botApiUrl
+					type :POST
+					parameters:messagePayload.toString()
+					connection:"cliq_access"
+				];
+			}
+			else
+			{
+				// No urgent tasks - Send Positive Msg
+				happyMsg = "👋 **Good Morning!**\n";
+				happyMsg = happyMsg + "🎉 **You are all caught up!**\n";
+				happyMsg = happyMsg + "No urgent tasks for the next 7 days.";
+				messagePayload = Map();
+				messagePayload.put("text",happyMsg);
+				apiResponse = invokeurl
+				[
+					url :botApiUrl
+					type :POST
+					parameters:messagePayload.toString()
+					connection:"cliq_access"
+				];
+			}
+		}
+	}
+}
