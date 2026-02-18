@@ -187,7 +187,7 @@ If a specific channel member is not officially synced, they will not receive pro
 
 ---
 
-### 3️⃣ Automatic Admin Sync & Member Removal
+### 🔁 Automatic Admin Sync & Member Removal
 
 - When the bot is added to a channel, the **Admin is automatically synced**.
 - A dropdown appears showing all other members who need to be synced.
@@ -202,7 +202,7 @@ This ensures only live channel members remain authorized.
 
 ---
 
-### 4️⃣ `/syncmembers` – Manual Refresh for New Members
+### 🔁  `/syncmembers` – Manual Refresh for New Members
 
 - Channel admins can type `/syncmembers` anytime.
 - The command shows a dropdown containing **only new members** who are not yet synced.
