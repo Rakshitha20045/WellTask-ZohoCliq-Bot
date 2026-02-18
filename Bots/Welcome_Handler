@@ -1,0 +1,82 @@
+
+// ============================================================
+// 1. CONFIGURATION
+// ============================================================
+// Your exact project config
+project_id = "";
+api_key = "";
+collection_name = "";
+// ============================================================
+// 2. GET USER INFO
+// ============================================================
+user_id = user.get("id") + "";
+email = user.get("email");
+first_name = user.get("first_name");
+last_name = user.get("last_name");
+current_time = zoho.currenttime.toString("yyyy-MM-dd'T'HH:mm:ss'Z'");
+// Use Email as Document ID (It's unique and consistent)
+doc_id = email;
+// ============================================================
+// 3. CHECK FIREBASE (REST API)
+// ============================================================
+firestore_url = ";
+// Check if user exists
+check_response = invokeurl
+[
+	url :firestore_url
+	type :GET
+];
+welcome_text = "";
+// ============================================================
+// 4. LOGIC: CREATE OR UPDATE
+// ============================================================
+if(check_response.get("error") != null)
+{
+	// --- NEW USER: CREATE RECORD ---
+	payload = Map();
+	fields = Map();
+	// Firestore JSON Syntax
+	fields.put("user_id",{"stringValue":user_id});
+	fields.put("email",{"stringValue":email});
+	fields.put("first_name",{"stringValue":first_name});
+	fields.put("is_active",{"booleanValue":true});
+	fields.put("subscribed_at",{"timestampValue":current_time});
+	fields.put("last_active",{"timestampValue":current_time});
+	payload.put("fields",fields);
+	// Create via PATCH
+	create_response = invokeurl
+	[
+		url :firestore_url
+		type :PATCH
+		parameters:payload.toString()
+		headers:{"Content-Type":"application/json"}
+	];
+	welcome_text = "👋 Welcome to *WellTask, " + first_name + "*!\n\nI'm here to help you manage your tasks, time, and wellness—all in one place. 🎯\n\nType `/welltask` to open your dashboard.";
+}
+else
+{
+	// --- EXISTING USER: UPDATE 'LAST ACTIVE' ONLY ---
+	payload = Map();
+	fields = Map();
+	fields.put("last_active",{"timestampValue":current_time});
+	fields.put("is_active",{"booleanValue":true});
+	fields.put("first_name",{"stringValue":first_name});
+	// Update name if changed
+	payload.put("fields",fields);
+	// Update specific fields only
+	update_url = firestore_url + "&updateMask.fieldPaths=last_active&updateMask.fieldPaths=is_active&updateMask.fieldPaths=first_name";
+	update_response = invokeurl
+	[
+		url :update_url
+		type :PATCH
+		parameters:payload.toString()
+		headers:{"Content-Type":"application/json"}
+	];
+	welcome_text = "🎉 Welcome back, " + first_name + "!\n\nGreat to see you again! Let's continue crushing your goals. 💪";
+}
+// ============================================================
+// 5. RESPOND
+// ============================================================
+response = Map();
+response.put("text",welcome_text);
+return response;
