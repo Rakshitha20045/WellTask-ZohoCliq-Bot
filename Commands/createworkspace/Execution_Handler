@@ -1,0 +1,38 @@
+// - Identifies if Personal or Channel Board
+// - Opens form for Workspace > Project > Group
+// 1. Context & Board Identification
+u_id = user.get("id");
+board_id = u_id;
+isChannelBoard = false;
+if(chat != null)
+{
+	if(chat.get("type") == "channel" || chat.get("type") == "group")
+	{
+		board_id = chat.get("id");
+		isChannelBoard = true;
+	}
+}
+board_id = board_id + "";
+// 2. Build Form Inputs
+inputs = List();
+// Input 1: Workspace Name
+inputs.add({"type":"text","name":"workspace_name","label":"1. Workspace Name","placeholder":"e.g., Marketing","mandatory":true});
+// Input 2: Project Name
+inputs.add({"type":"text","name":"project_name","label":"2. Project Name","placeholder":"e.g., Q1 Goals","mandatory":true});
+// Input 3: Group Name
+inputs.add({"type":"text","name":"group_name","label":"3. Group Name","placeholder":"e.g., To Do","mandatory":true,"value":"To Do"});
+// 3. Link to Submit Handler
+action = Map();
+action.put("type","invoke.function");
+action.put("name","WelltaskCreateHandler");
+// 4. Return Form
+form = Map();
+form.put("type","form");
+form.put("title","Create New Workspace");
+form.put("name","welltask_create_ws_form");
+// FIXED: Shortened to under 20 characters
+form.put("button_label","Create Workspace");
+form.put("inputs",inputs);
+form.put("action",action);
+info "✅ /createworkspace handler END";
+return form;
