@@ -1,0 +1,150 @@
+
+// - Works in both personal DM and channel dashboards
+// - In channel/group: Assignee is dropdown of channel_members
+// 1. Context & Board Identification
+u_id = user.get("id");
+board_id = u_id;
+isChannelBoard = false;
+if(chat != null)
+{
+	if(chat.get("type") == "channel" || chat.get("type") == "group")
+	{
+		board_id = chat.get("id");
+		isChannelBoard = true;
+	}
+}
+board_id = board_id + "";
+// 2. Fetch Board Doc from Firestore (for workspaces, projects, groups)
+projectId = "";
+collection = "";
+url = ";
+response = invokeurl
+[
+	url :url
+	type :GET
+];
+if(response.get("error") != null || response.get("fields") == null)
+{
+	return "⚠️ **Board not initialized!**\nPlease run `/wellboard` first to set up your dashboard.";
+}
+fields = response.get("fields");
+// 3. Parse Workspaces into a List
+workspaceOptions = List();
+if(fields.get("workspaces") != null && fields.get("workspaces").get("arrayValue") != null)
+{
+	wsArray = fields.get("workspaces").get("arrayValue").get("values");
+	for each  w in wsArray
+	{
+		wData = w.get("mapValue").get("fields");
+		workspaceOptions.add({"label":wData.get("name").get("stringValue"),"value":wData.get("id").get("stringValue")});
+	}
+}
+else
+{
+	info "⚠️ No workspaces array in board doc";
+}
+// 4. Create "Dummy" Options for Project & Group
+dummyList = List();
+dummyList.add({"label":"Select Workspace First...","value":"-1"});
+dummyGroups = List();
+dummyGroups.add({"label":"Waiting for Project...","value":"-1"});
+// 5. Build Assignee Options (for channel/group only)
+assigneeOptions = List();
+if(isChannelBoard)
+{
+	try 
+	{
+		membersUrl = "https://firestore.googleapis.com/v1/projects/" + projectId + "/databases/(default)/documents:runQuery";
+		fromList = List();
+		fromList.add({"collectionId":"channel_members"});
+		fieldMap = Map();
+		fieldMap.put("fieldPath","chat_id");
+		valueMap = Map();
+		valueMap.put("stringValue",board_id);
+		fieldFilter = Map();
+		fieldFilter.put("field",fieldMap);
+		fieldFilter.put("op","EQUAL");
+		fieldFilter.put("value",valueMap);
+		whereMap = Map();
+		whereMap.put("fieldFilter",fieldFilter);
+		structuredQuery = Map();
+		structuredQuery.put("from",fromList);
+		structuredQuery.put("where",whereMap);
+		queryPayload = Map();
+		queryPayload.put("structuredQuery",structuredQuery);
+		membersResp = invokeurl
+		[
+			url :membersUrl
+			type :POST
+			parameters:queryPayload.toString()
+			headers:{"Content-Type":"application/json"}
+		];
+		for each  row in membersResp
+		{
+			if(row.get("document") != null)
+			{
+				docFields = row.get("document").get("fields");
+				mName = docFields.get("name").get("stringValue");
+				mZohoId = docFields.get("zoho_id").get("stringValue");
+				// value MUST be simple string → we use only zoho_id
+				optValue = mZohoId;
+				assigneeOptions.add({"label":mName,"value":optValue});
+			}
+			else
+			{
+				info "⚠️ Row without document: " + row;
+			}
+		}
+	}
+	catch (ex)
+	{
+		info "❌ Error while loading channel_members: " + ex.toString();
+	}
+	if(assigneeOptions.size() == 0)
+	{
+		assigneeOptions.add({"label":"No members found","value":""});
+	}
+}
+else
+{
+	info "👤 Personal board → using text field for assignee";
+}
+// 6. Build the Form Inputs
+inputs = List();
+// -- Task Name --
+inputs.add({"type":"text","name":"task_name","label":"Task Name","placeholder":"e.g., Fix Bug","mandatory":true});
+// -- Workspace (Triggers the Dynamic Change) --
+inputs.add({"type":"select","name":"workspace_id","label":"Select Workspace","placeholder":"Choose...","mandatory":true,"options":workspaceOptions,"trigger_on_change":true});
+// -- Project (Initially holds Dummy List) --
+inputs.add({"type":"select","name":"project_id","label":"Select Project","placeholder":"Waiting for Workspace...","mandatory":true,"options":dummyList,"trigger_on_change":true});
+// -- Group/Column (Initially holds Dummy Groups) --
+inputs.add({"type":"select","name":"group_id","label":"Select Column","placeholder":"Waiting for Project...","mandatory":true,"options":dummyGroups});
+// -- Priority (now includes Critical) --
+inputs.add({"type":"select","name":"priority","label":"Priority","placeholder":"Select Priority","value":"Medium","options":{{"label":"Critical","value":"Critical"},{"label":"High","value":"High"},{"label":"Medium","value":"Medium"},{"label":"Low","value":"Low"}}});
+// -- Due Date --
+inputs.add({"type":"date","name":"due_date","label":"Due Date","placeholder":"Select due date","mandatory":false});
+// -- Assignee --
+if(isChannelBoard)
+{
+	// Dropdown of channel members
+	inputs.add({"type":"select","name":"assignee","label":"Assignee","placeholder":"Select a member","mandatory":false,"options":assigneeOptions});
+}
+else
+{
+	// For personal board keep free text
+	inputs.add({"type":"text","name":"assignee","label":"Assignee","placeholder":"e.g., Rakshitha","mandatory":false});
+}
+// 7. Link to the Submit Function
+action = Map();
+action.put("type","invoke.function");
+action.put("name","WelltaskSubmitHandler");
+// 8. Return the Form
+form = Map();
+form.put("type","form");
+form.put("title","Add Task");
+form.put("name","welltask_add_form");
+form.put("button_label","Add Task");
+form.put("inputs",inputs);
+form.put("action",action);
+info "✅ /addtask handler END – returning form";
+return form;
