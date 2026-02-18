@@ -1,0 +1,248 @@
+
+// welltaskSyncFormSubmit
+info "DEBUG: welltaskSyncFormSubmit invoked.";
+// --- CONFIGURATION ---
+project_id = "";
+api_key = "";
+// ---------------------
+// 1. READ FORM VALUES SAFELY
+vals = Map();
+try 
+{
+	vals = form.get("values");
+}
+catch (e)
+{
+	info "ERROR: Could not read form values: " + e.toString();
+	return {"text":"❌ Error reading form values."};
+}
+// 2. EXTRACT NEW USERS FROM submitted values (store raw and normalized)
+new_users_list = List();
+// raw values (for logging if needed)
+new_users_norm = List();
+// normalized values used for dedupe comparisons
+if(vals != null && vals.containsKey("allowed_users"))
+{
+	raw = vals.get("allowed_users");
+	if(raw != null)
+	{
+		raw_list = List();
+		// raw might be a List of maps, or a single value
+		try 
+		{
+			for each  it in raw
+			{
+				raw_list.add(it);
+			}
+		}
+		catch (e)
+		{
+			// single object or string
+			raw_list.add(raw);
+		}
+		for each  r in raw_list
+		{
+			clean_email = "";
+			try 
+			{
+				// when option is a map like {"label":"...","value":"..."}
+				clean_email = r.get("value");
+			}
+			catch (e)
+			{
+				// fallback to raw toString
+				clean_email = r.toString();
+			}
+			if(clean_email == null)
+			{
+				clean_email = r.toString();
+			}
+			// NORMALIZE: remove quotes, trim, lower-case
+			norm = clean_email.toString().replaceAll("\"","").trim().toLowerCase();
+			if(norm != "")
+			{
+				new_users_list.add(clean_email);
+				new_users_norm.add(norm);
+			}
+		}
+	}
+}
+// 3. FETCH BOARDS (to find the matching board by channel_id)
+chat_id = chat.get("id");
+boards_query_url = ";
+boards_resp = Map();
+try 
+{
+	boards_resp = invokeurl
+	[
+		url :boards_query_url
+		type :GET
+	];
+}
+catch (e)
+{
+	info "ERROR: Boards query failed: " + e.toString();
+	return {"text":"❌ Could not query boards."};
+}
+target_doc_id = "";
+board_exists = false;
+final_users_list = List();
+// will hold original-string values to store back to Firestore
+final_users_norm = List();
+// normalized set for dedupe comparisons
+// always ensure the current user (admin) is present (normalized)
+current_user = ifnull(user.get("email"),"");
+cur_norm = current_user.toString().replaceAll("\"","").trim().toLowerCase();
+if(cur_norm != "" && !final_users_norm.contains(cur_norm))
+{
+	final_users_list.add(current_user);
+	final_users_norm.add(cur_norm);
+}
+// merge existing board allowed_users if board found
+if(boards_resp.containsKey("documents") && boards_resp.get("documents") != null)
+{
+	for each  d in boards_resp.get("documents")
+	{
+		fields = d.get("fields");
+		if(fields != null && fields.containsKey("channel_id"))
+		{
+			ch_val = fields.get("channel_id").get("stringValue");
+			if(ch_val == chat_id.toString())
+			{
+				fullName = d.get("name").toString();
+				target_doc_id = fullName.subString(fullName.lastIndexOf("/") + 1);
+				board_exists = true;
+				if(fields.containsKey("allowed_users"))
+				{
+					au = fields.get("allowed_users");
+					if(au.containsKey("arrayValue") && au.get("arrayValue").containsKey("values"))
+					{
+						vals_db = au.get("arrayValue").get("values");
+						for each  v in vals_db
+						{
+							if(v.containsKey("stringValue"))
+							{
+								raw_db_val = v.get("stringValue");
+								// normalize DB value (remove quotes, trim, lower)
+								db_norm = ifnull(raw_db_val,"").toString().replaceAll("\"","").trim().toLowerCase();
+								if(db_norm != "" && !final_users_norm.contains(db_norm))
+								{
+									// store original DB string (cleaned of quotes) for final output
+									cleaned_original = ifnull(raw_db_val,"").toString().replaceAll("\"","").trim();
+									final_users_list.add(cleaned_original);
+									final_users_norm.add(db_norm);
+								}
+							}
+						}
+					}
+				}
+				break;
+			}
+		}
+	}
+}
+// 4. MERGE new users into final list (avoid duplicates) using normalized comparison
+i = 0;
+for each  new_u in new_users_list
+{
+	// corresponding normalized value at same index in new_users_norm
+	norm_val = "";
+	if(i < new_users_norm.size())
+	{
+		norm_val = new_users_norm.get(i);
+	}
+	i = i + 1;
+	if(norm_val != "" && !final_users_norm.contains(norm_val))
+	{
+		// add the normalized + original (store cleaned original without quotes)
+		cleaned_new = new_u.toString().replaceAll("\"","").trim();
+		final_users_list.add(cleaned_new);
+		final_users_norm.add(norm_val);
+	}
+	else
+	{
+		// already exists — skip adding duplicate
+		info "DEBUG: Skipping duplicate or empty: " + new_u;
+	}
+}
+// 5. BUILD firestore array values (use cleaned strings from final_users_list)
+allowed_values_json = List();
+for each  u in final_users_list
+{
+	tmp = Map();
+	tmp.put("stringValue",u);
+	allowed_values_json.add(tmp);
+}
+// 6. UPDATE or CREATE board document
+if(board_exists)
+{
+	// UPDATE existing doc (patch allowed_users)
+	fields_update = Map();
+	arrVal = Map();
+	arrVal.put("values",allowed_values_json);
+	fVal = Map();
+	fVal.put("arrayValue",arrVal);
+	fields_update.put("allowed_users",fVal);
+	payload = Map();
+	payload.put("fields",fields_update);
+	patch_url = ";
+	try 
+	{
+		invokeurl
+		[
+			url :patch_url
+			type :PATCH
+			parameters:payload.toString()
+			headers:{"Content-Type":"application/json"}
+		]
+	}
+	catch (e)
+	{
+		info "ERROR: Patch failed: " + e.toString();
+		return {"text":"❌ Failed to update board members."};
+	}
+	return {"text":"✅ **Success!** New members have been added to the board (duplicates skipped)."};
+}
+else
+{
+	// CREATE new board doc
+	new_board_id = zoho.currenttime.toLong().toString() + "999";
+	emptyArray = Map();
+	emptyArray.put("values",List());
+	emptyField = Map();
+	emptyField.put("arrayValue",emptyArray);
+	usersArray = Map();
+	usersArray.put("values",allowed_values_json);
+	usersField = Map();
+	usersField.put("arrayValue",usersArray);
+	new_board_fields = Map();
+	new_board_fields.put("boardid",{"stringValue":new_board_id});
+	new_board_fields.put("name",{"stringValue":"Team Tasks"});
+	new_board_fields.put("board_type",{"stringValue":"team"});
+	new_board_fields.put("channel_id",{"stringValue":chat_id.toString()});
+	new_board_fields.put("owner_email",{"stringValue":current_user});
+	new_board_fields.put("allowed_users",usersField);
+	new_board_fields.put("workspaces",emptyField);
+	new_board_fields.put("projects",emptyField);
+	new_board_fields.put("groups",emptyField);
+	new_board_fields.put("tasks",emptyField);
+	create_payload = Map();
+	create_payload.put("fields",new_board_fields);
+	create_url = ";
+	try 
+	{
+		invokeurl
+		[
+			url :create_url
+			type :POST
+			parameters:create_payload.toString()
+			headers:{"Content-Type":"application/json"}
+		]
+	}
+	catch (e)
+	{
+		info "ERROR: Create board failed: " + e.toString();
+		return {"text":"❌ Failed to create board."};
+	}
+	return {"text":"🚀 **Board Created!** Members have been granted access."};
+}
