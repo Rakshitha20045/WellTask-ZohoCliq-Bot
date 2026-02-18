@@ -1,0 +1,45 @@
+try 
+{
+	// 1. Get User Details
+	u_email = "";
+	u_id = "";
+	if(user != null)
+	{
+		u_email = ifnull(user.get("email"),"");
+		u_id = ifnull(user.get("id"),"");
+	}
+	// 2. Determine Board ID
+	// Default to User ID (Matches your Sidebar Personal Board)
+	board_id = u_id;
+	// Only switch to a Shared Board ID if we are inside a CHANNEL
+	if(chat != null)
+	{
+		c_type = chat.get("type");
+		// gets 'channel', 'personal', or 'bot'
+		c_id = chat.get("id");
+		// Only use the Chat ID if it is a Channel
+		// (You can also add "group" if you want group chats to be shared boards)
+		if(c_type == "channel" || c_type == "group")
+		{
+			board_id = c_id;
+		}
+	}
+	board_id = board_id + "";
+	// ensure string
+	// 3. Generate Token
+	token_raw = u_email + "::" + u_id + "::" + board_id;
+	secure_token = zoho.encryption.base64Encode(token_raw);
+	// 4. Build URL
+	base_url = "";
+	final_url = base_url + "?token=" + secure_token + "&boardid=" + board_id;
+	// 5. Response
+	response = Map();
+	msg = "✅ **WellTask Board Ready!**\n[🚀 Click here to Open Dashboard](" + final_url + ")";
+	response.put("text",msg);
+	return response;
+}
+catch (e)
+{
+	return {"text":"Error: " + e.toString()};
+}
+return response;
