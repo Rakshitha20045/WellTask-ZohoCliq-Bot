@@ -20,6 +20,28 @@ It integrates dashboards, Pomodoro-based focus tracking, automated alerts, and a
 Built with real-time architecture and secure access validation.
 
 ---
+## 🧭 User Onboarding & Help System
+
+<img src="https://i.ibb.co/JwsSk05F/help.png" width="500"/>
+
+To improve user experience for new subscribers, WellTask includes a built-in **Help Shortcut Menu**.
+
+When a user subscribes to the bot for the first time:
+
+- A shortcut **Help button** is available.
+- Users can instantly view all available features.
+- No need to remember slash commands.
+- Provides guided navigation through:
+  - Dashboard access
+  - Task creation
+  - Focus Hub
+  - Productivity reports
+  - Member sync features
+
+This ensures smooth onboarding and reduces user learning friction.
+
+---
+
 
 ## 🔐 Secure Access & Identity Verification
 
