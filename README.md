@@ -432,7 +432,7 @@ Shortlisted in **Round-1 of Zoho CliqTrix ’26**
 
 ---
 
-## 🛠 Engineering Challenges
+## 🛠 Challenges
 
 - **API Integration:** Managed integration between Zoho Cliq bot, widget, and Firebase backend.
 - **Complex Debugging:** A small issue in one module impacted others — required structured isolation and testing.
