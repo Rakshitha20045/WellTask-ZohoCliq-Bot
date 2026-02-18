@@ -1,0 +1,142 @@
+
+// form + target info from Cliq
+values = form.get("values");
+targetName = "";
+if(target != null)
+{
+	targetName = target.get("name");
+}
+// 1. Identify Board (works for both personal + channel dashboard)
+u_id = user.get("id");
+board_id = u_id;
+if(chat != null)
+{
+	c_type = chat.get("type");
+	c_id = chat.get("id");
+	if(c_type == "channel" || c_type == "group")
+	{
+		board_id = c_id;
+	}
+}
+board_id = board_id.toString();
+// 2. Fetch Firestore data for this board
+projectId = "";
+url = ";
+response = invokeurl
+[
+	url :url
+	type :GET
+];
+if(response.get("error") != null || response.get("fields") == null)
+{
+	return {"type":"form_modification","actions":List()};
+}
+fields = response.get("fields");
+// CASE 1: WORKSPACE -> UPDATE PROJECT DROPDOWN
+if(targetName == "workspace_id")
+{
+	wsRaw = values.get("workspace_id");
+	selectedWsId = "";
+	// Safe extraction from select value (handles array / map / string)
+	try 
+	{
+		selectedWsId = wsRaw.get(0).get("value");
+	}
+	catch (e1)
+	{
+		try 
+		{
+			selectedWsId = wsRaw.get("value");
+		}
+		catch (e2)
+		{
+			selectedWsId = wsRaw;
+		}
+	}
+	selectedWsId = selectedWsId.toString();
+	// Handle JSON-like "value":"..." string
+	if(selectedWsId.contains("value"))
+	{
+		selectedWsId = selectedWsId.getSuffix("value\":\"").getPrefix("\"");
+	}
+	projectOptions = List();
+	if(fields.get("projects") != null && fields.get("projects").get("arrayValue") != null)
+	{
+		pArray = fields.get("projects").get("arrayValue").get("values");
+		for each  p in pArray
+		{
+			pData = p.get("mapValue").get("fields");
+			dbWsId = pData.get("workspaceId").get("stringValue");
+			if(dbWsId == selectedWsId)
+			{
+				projName = pData.get("name").get("stringValue");
+				projId = pData.get("id").get("stringValue");
+				projectOptions.add({"label":projName,"value":projId});
+			}
+		}
+	}
+	if(projectOptions.size() == 0)
+	{
+		projectOptions.add({"label":"⚠️ No Projects Found","value":"-1"});
+	}
+	// when workspace changes, reset group dropdown to dummy
+	groupDummyOptions = List();
+	groupDummyOptions.add({"label":"Waiting for Project...","value":"-1"});
+	actions = List();
+	// UPDATE project field (type = update + full input definition)
+	actions.add({"type":"update","name":"project_id","input":{"type":"select","name":"project_id","label":"Select Project","placeholder":"Select Project","mandatory":true,"trigger_on_change":true,"options":projectOptions}});
+	// UPDATE group field to dummy list
+	actions.add({"type":"update","name":"group_id","input":{"type":"select","name":"group_id","label":"Select Column","placeholder":"Waiting for Project...","mandatory":true,"options":groupDummyOptions}});
+	return {"type":"form_modification","actions":actions};
+}
+// CASE 2: PROJECT -> UPDATE GROUP/COLUMN DROPDOWN
+if(targetName == "project_id")
+{
+	pRaw = values.get("project_id");
+	selectedProjId = "";
+	// Safe extraction from select value (handles array / map / string)
+	try 
+	{
+		selectedProjId = pRaw.get(0).get("value");
+	}
+	catch (e1)
+	{
+		try 
+		{
+			selectedProjId = pRaw.get("value");
+		}
+		catch (e2)
+		{
+			selectedProjId = pRaw;
+		}
+	}
+	selectedProjId = selectedProjId.toString();
+	groupOptions = List();
+	if(selectedProjId != null && selectedProjId != "" && selectedProjId != "-1")
+	{
+		if(fields.get("groups") != null && fields.get("groups").get("arrayValue") != null)
+		{
+			gArray = fields.get("groups").get("arrayValue").get("values");
+			for each  g in gArray
+			{
+				gData = g.get("mapValue").get("fields");
+				dbPId = gData.get("projectId").get("stringValue");
+				if(dbPId == selectedProjId)
+				{
+					groupName = gData.get("name").get("stringValue");
+					groupId = gData.get("id").get("stringValue");
+					groupOptions.add({"label":groupName,"value":groupId});
+				}
+			}
+		}
+	}
+	if(groupOptions.size() == 0)
+	{
+		groupOptions.add({"label":"⚠️ No Columns Found","value":"-1"});
+	}
+	actions = List();
+	actions.add({"type":"update","name":"group_id","input":{"type":"select","name":"group_id","label":"Select Column","placeholder":"Select Column","mandatory":true,"options":groupOptions}});
+	return {"type":"form_modification","actions":actions};
+}
+// DEFAULT: nothing to modify
+return {"type":"form_modification","actions":List()};
