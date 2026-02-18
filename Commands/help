@@ -1,39 +1,22 @@
 
-// - Identifies if Personal or Channel Board
-// - Opens form for Workspace > Project > Group
-// 1. Context & Board Identification
-u_id = user.get("id");
-board_id = u_id;
-isChannelBoard = false;
-if(chat != null)
-{
-	if(chat.get("type") == "channel" || chat.get("type") == "group")
-	{
-		board_id = chat.get("id");
-		isChannelBoard = true;
-	}
-}
-board_id = board_id + "";
-// 2. Build Form Inputs
-inputs = List();
-// Input 1: Workspace Name
-inputs.add({"type":"text","name":"workspace_name","label":"1. Workspace Name","placeholder":"e.g., Marketing","mandatory":true});
-// Input 2: Project Name
-inputs.add({"type":"text","name":"project_name","label":"2. Project Name","placeholder":"e.g., Q1 Goals","mandatory":true});
-// Input 3: Group Name
-inputs.add({"type":"text","name":"group_name","label":"3. Group Name","placeholder":"e.g., To Do","mandatory":true,"value":"To Do"});
-// 3. Link to Submit Handler
-action = Map();
-action.put("type","invoke.function");
-action.put("name","WelltaskCreateHandler");
-// 4. Return Form
-form = Map();
-form.put("type","form");
-form.put("title","Create New Workspace");
-form.put("name","welltask_create_ws_form");
-// FIXED: Shortened to under 20 characters
-form.put("button_label","Create Workspace");
-form.put("inputs",inputs);
-form.put("action",action);
-info "✅ /createworkspace handler END";
-return form;
+/*
+ * WellTask Master Help Command - FINAL EXACT TEXT VERSION
+ * Features: All 8 points with 6 images and new logo, with updated logic.
+ */
+// --- 1. YOUR IMAGES (Already Linked) ---
+img_kanban = "https://i.ibb.co/d4k5GfbF/Screenshot-2025-11-30-130301.png";
+img_list = "https://i.ibb.co/DPN5vbyX/Screenshot-2025-11-30-125540.png";
+img_focus = "https://i.ibb.co/MYx751W/Screenshot-2025-11-30-125610.png";
+img_settings = "https://i.ibb.co/WW5NGcB3/Screenshot-2025-11-30-125630.png";
+img_activity = "https://i.ibb.co/zTRksWxm/Screenshot-2025-11-30-125707.png";
+img_distrib = "https://i.ibb.co/3520qFT0/Screenshot-2025-11-30-125721.png";
+// Your New Logo
+my_logo = "https://i.ibb.co/7xkRGcJx/647cf60a-aa9e-41c4-b87b-6e3f55eb4367.png";
+// --- 2. BUILD THE EXACT TEXT WITH IMAGES ---
+msg = "### 👋 Welcome to WellTask!\n\n" + "Here is a complete guide to all features:\n\n" + "--- \n\n" + "### 1. `/welltask` – Open Dashboard\n" + "![Dashboard](" + img_kanban + ")\n" + "• When you type `/welltask` in a channel, a **preview of the Team Dashboard** appears along with a button to open the full dashboard.\n" + "• When you type `/welltask` in the WellTask bot chat, a **preview of your Personal Dashboard** appears along with a button to open the full dashboard.\n\n" + "--- \n\n" + "### 2. `/addtask` – Create Tasks Inside Chat\n" + "![List](" + img_list + ")\n" + "• **In a channel:** A task form appears with Workspace, Project, Group, and **Assign-To** options.\n" + "• The created task appears instantly in the Team Dashboard and the assigned user’s Personal Dashboard.\n" + "• The assigned user also gets an instant notification.\n" + "• **In bot chat:** The form appears without Assign-To, since it's personal.\n\n" + "--- \n\n" + "### 3 & 4. Member Sync and Management\n" + "![Settings](" + img_settings + ")\n" + "**3. Automatic Admin Sync and Member Removal**\n" + "• When the bot is added to a channel, the **Admin is automatically synced**.\n" + "• A dropdown appears showing all other members who need to be synced.\n" + "• If a member is removed or leaves, a daily check at **9:30 AM** removes them from `allowed_user` so they can no longer view the dashboard.\n\n" + "**4. `/syncmembers` – Manual Refresh for New Members**\n" + "• Channel admins can type `/syncmembers` anytime.\n" + "• This command shows a dropdown containing **only the new members** who are not yet added to `allowed_user`.\n\n" + "--- \n\n" + "### 5. Daily Deadline Alerts\n" + "• Every morning, WellTask checks your tasks.\n" + "• It sends you alerts for deadlines, overdue tasks, and urgent tasks.\n" + "• You get reminders without opening the dashboard.\n\n" + "--- \n\n" + "### 6. Focus Hub (Pomodoro System)\n" + "![Focus](" + img_focus + ")\n" + "• Users only need to start the focus session from the Focus Hub — everything else is managed inside WellTask.\n" + "• Focus duration, breaks, and long-break settings are customizable.\n" + "• When a session starts, the bot sends a real-time **“Focus Started”** message.\n" + "• **Break messages** appear automatically when a session ends.\n" + "• You can Take Break, Skip Break, or Complete Early.\n" + "• Completed tasks can be restored anytime. Break time is not counted as focus time.\n\n" + "--- \n\n" + "### 7. Productivity Reports\n" + "![Activity](" + img_activity + ")\n" + "• Shows Daily, Weekly, and Monthly productivity.\n" + "• Tracks Pomodoros, focus minutes, break usage, and streaks.\n" + "![Distribution](" + img_distrib + ")\n" + "• Shows which tasks you spent the most time on.\n\n" + "--- \n\n" + "### 8. Dual Dashboard Mode\n" + "• **In the bot chat:** Users see 2 dashboards: Personal Task Manager & Focus Hub.\n" + "• **In a team channel:** Only the Team Task Dashboard appears. (Focus Hub is not shown in team mode).\n";
+// --- 3. RETURN THE RESPONSE ---
+response = Map();
+response.put("text",msg);
+// Add the footer card with YOUR NEW LOGO
+response.put("card",{"theme":"modern-inline","title":"WellTask - Real-Time Productivity","thumbnail":my_logo});
+return response;
