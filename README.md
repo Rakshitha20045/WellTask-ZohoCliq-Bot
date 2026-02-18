@@ -173,6 +173,57 @@ When `/addtask` is used in personal bot chat:
 
 ---
 
+## 🚨 Smart Alerts & Daily Task Intelligence
+
+WellTask includes an automated alerting engine that continuously monitors task urgency and deadline risks.
+
+---
+
+### 🔴 Deadline Risk Alerts
+
+<img src="https://i.ibb.co/ZRtddJBP/deadline-alerts.png" width="900"/>
+
+WellTask automatically sends **Deadline Risk Alerts** when:
+
+- A task is marked as **High Priority**
+- The due date is near or approaching
+- The task is at risk of being overdue
+
+Alert includes:
+- Task Name
+- Priority Level (High)
+- Due Date
+- Risk indication
+
+Only priority-wise important tasks are highlighted.  
+Lower-priority tasks are intentionally filtered to avoid notification overload.
+
+This ensures users focus only on critical work.
+
+---
+
+### 🌅 Daily Task Briefing (9:30 AM Automation)
+
+<img src="https://i.ibb.co/vCsybg7j/dailytaskoverview.png" width="900"/>
+
+Every morning at **9:30 AM**, WellTask sends an automated **Daily Task Briefing**.
+
+The briefing includes:
+- All pending tasks
+- Priority classification
+- Due dates
+- Structured overview of the day’s workload
+
+This feature helps users:
+- Plan their day effectively
+- Prioritize critical tasks
+- Stay accountable without opening the dashboard
+
+Powered by scheduled automation and backend cron logic.
+
+---
+
+
 
 
 ## 🎯 Focus Hub – Pomodoro Productivity Engine
