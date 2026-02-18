@@ -1,0 +1,195 @@
+
+// welltaskDailyCleanup - scheduled job (invokeurl uses literal connection linkname)
+info "DEBUG: welltaskDailyCleanup invoked.";
+project_id = "";
+api_key = "";
+// MAKE SURE this string exactly matches your connection link name in Zoho (case sensitive)
+cliq_connection_literal = "cliq_access";
+// inline normalize helper pattern used where needed: 
+// norm = ifnull(s,"").toString().replaceAll("\"","").trim().toLowerCase();
+// 1) GET all boards
+boards_url = ";
+boards_resp = Map();
+try 
+{
+	boards_resp = invokeurl
+	[
+		url :boards_url
+		type :GET
+	];
+}
+catch (e)
+{
+	info "ERROR: Boards query failed: " + e.toString();
+	return;
+}
+if(!boards_resp.containsKey("documents") || boards_resp.get("documents") == null)
+{
+	info "DEBUG: No boards found.";
+	return;
+}
+removed_summary = List();
+// 2) iterate boards
+for each  d in boards_resp.get("documents")
+{
+	try 
+	{
+		fields = d.get("fields");
+		if(fields == null)
+		{
+			continue;
+		}
+		if(!fields.containsKey("channel_id"))
+		{
+			continue;
+		}
+		channel_id = ifnull(fields.get("channel_id").get("stringValue"),"").toString();
+		if(channel_id == "")
+		{
+			continue;
+		}
+		// 3) build firestore_users and normalized set
+		firestore_users = List();
+		firestore_norm_set = List();
+		if(fields.containsKey("allowed_users"))
+		{
+			au = fields.get("allowed_users");
+			if(au != null && au.containsKey("arrayValue") && au.get("arrayValue").containsKey("values"))
+			{
+				vals_db = au.get("arrayValue").get("values");
+				for each  v in vals_db
+				{
+					if(v.containsKey("stringValue"))
+					{
+						raw_db_val = ifnull(v.get("stringValue"),"").toString();
+						cleaned_original = raw_db_val.replaceAll("\"","").trim();
+						db_norm = ifnull(cleaned_original,"").toString().toLowerCase();
+						if(db_norm != "" && !firestore_norm_set.contains(db_norm))
+						{
+							firestore_users.add(cleaned_original);
+							firestore_norm_set.add(db_norm);
+						}
+					}
+				}
+			}
+		}
+		// 4) fetch channel members from Cliq
+		members_url = "https://cliq.zoho.com/api/v2/chats/" + channel_id + "/members";
+		members_resp = Map();
+		try 
+		{
+			// <-- use literal connection link name below
+			members_resp = invokeurl
+			[
+				url :members_url
+				type :GET
+				connection:"cliq_access"
+			];
+		}
+		catch (e)
+		{
+			info "WARN: Could not fetch members for channel " + channel_id + ": " + e.toString();
+			continue;
+		}
+		members_list = members_resp.get("members");
+		channel_norm_set = List();
+		if(members_list != null)
+		{
+			for each  mm in members_list
+			{
+				em = ifnull(mm.get("email_id"),"").toString();
+				uid_val = ifnull(mm.get("user_id"),"").toString();
+				val = "";
+				if(em != "")
+				{
+					val = em;
+				}
+				else if(uid_val != "")
+				{
+					val = uid_val;
+				}
+				else
+				{
+					continue;
+				}
+				// inline normalize:
+				norm = ifnull(val,"").toString().replaceAll("\"","").trim().toLowerCase();
+				if(norm != "" && !channel_norm_set.contains(norm))
+				{
+					channel_norm_set.add(norm);
+				}
+			}
+		}
+		// 5) compare and find removals
+		to_keep = List();
+		to_remove = List();
+		for each  fu in firestore_users
+		{
+			fnorm = ifnull(fu,"").toString().replaceAll("\"","").trim().toLowerCase();
+			if(fnorm == "")
+			{
+				continue;
+			}
+			if(channel_norm_set.contains(fnorm))
+			{
+				to_keep.add(fu);
+			}
+			else
+			{
+				to_remove.add(fu);
+			}
+		}
+		if(to_remove.size() == 0)
+		{
+			info "DEBUG: No removals for board (channel): " + channel_id;
+			continue;
+		}
+		// 6) build new allowed_users array (only keep to_keep)
+		allowed_values_json = List();
+		for each  u in to_keep
+		{
+			tmp = Map();
+			tmp.put("stringValue",u);
+			allowed_values_json.add(tmp);
+		}
+		fields_update = Map();
+		arrVal = Map();
+		arrVal.put("values",allowed_values_json);
+		fVal = Map();
+		fVal.put("arrayValue",arrVal);
+		fields_update.put("allowed_users",fVal);
+		payload = Map();
+		payload.put("fields",fields_update);
+		// get doc id
+		fullName = d.get("name").toString();
+		// projects/.../documents/boards/<docid>
+		target_doc_id = fullName.subString(fullName.lastIndexOf("/") + 1);
+		patch_url = ";
+		try 
+		{
+			// <-- use literal connection link name below if you need to post to Cliq; PATCH to Firestore does NOT use connection
+			invokeurl
+			[
+				url :patch_url
+				type :PATCH
+				parameters:payload.toString()
+				headers:{"Content-Type":"application/json"}
+			]
+			info "INFO: Patched board " + target_doc_id + " — removed: " + to_remove.toString();
+			rec = Map();
+			rec.put("board_doc",target_doc_id);
+			rec.put("channel_id",channel_id);
+			rec.put("removed",to_remove);
+			removed_summary.add(rec);
+		}
+		catch (e)
+		{
+			info "ERROR: Patch failed for board " + target_doc_id + ": " + e.toString();
+		}
+	}
+	catch (e)
+	{
+		info "WARN: board loop error: " + e.toString();
+	}
+}
+info "DEBUG: Daily cleanup finished. Summary: " + removed_summary.toString();
