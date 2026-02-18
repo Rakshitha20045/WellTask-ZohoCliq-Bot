@@ -1,0 +1,178 @@
+
+// welltaskSyncMembersSubmit - Final corrected version for clean email storage
+info "SYNC: welltaskSyncMembersSubmit start";
+project_id = "";
+api_key = "";
+// 1) read form values
+vals = Map();
+try 
+{
+	vals = form.get("values");
+}
+catch (e)
+{
+	return {"text":"Error reading form values."};
+}
+selected = List();
+if(vals != null && vals.containsKey("add_members"))
+{
+	raw = vals.get("add_members");
+	try 
+	{
+		// For a multi-select, raw should be a List of strings (emails)
+		for each  r in raw
+		{
+			selected.add(r);
+		}
+	}
+	catch (e)
+	{
+		// Handles case where only one item is selected and raw is a single string
+		selected.add(raw);
+	}
+}
+if(selected.size() == 0)
+{
+	return {"text":"No members selected."};
+}
+// 2) find board doc for this chat
+chat_id = chat.get("id");
+boards_url = ";
+boards_resp = invokeurl
+[
+	url :boards_url
+	type :GET
+];
+target_doc_id = "";
+orig_allowed = List();
+if(boards_resp.containsKey("documents"))
+{
+	docs = boards_resp.get("documents");
+	for each  d in docs
+	{
+		f = d.get("fields");
+		if(f != null && f.containsKey("channel_id"))
+		{
+			cid = ifnull(f.get("channel_id").get("stringValue"),"").toString();
+			if(cid == chat_id.toString())
+			{
+				full = d.get("name").toString();
+				target_doc_id = full.subString(full.lastIndexOf("/") + 1);
+				// Read existing allowed_users, cleaning entries.
+				if(f.containsKey("allowed_users"))
+				{
+					au = f.get("allowed_users");
+					if(au != null && au.containsKey("arrayValue") && au.get("arrayValue").containsKey("values"))
+					{
+						vals2 = au.get("arrayValue").get("values");
+						for each  vv in vals2
+						{
+							if(vv.containsKey("stringValue"))
+							{
+								rv = ifnull(vv.get("stringValue"),"").toString();
+								// Clean the existing value to handle malformed entries already present
+								cleaned = rv.replaceAll("\"","").trim();
+								// *** CRITICAL CLEANING FOR EXISTING ENTRIES ***
+								// If the existing entry is malformed (contains "value"), extract the email
+								if(cleaned.contains("value") && cleaned.contains("@"))
+								{
+									// Find the index of "value" and take the substring from there
+									cleaned = cleaned.subString(cleaned.lastIndexOf("value") + 5);
+								}
+								// Ensure only valid email characters remain
+								cleaned = cleaned.replaceAll("[^A-Za-z0-9@._\\-]","");
+								if(cleaned != "" && !orig_allowed.contains(cleaned))
+								{
+									orig_allowed.add(cleaned);
+								}
+							}
+						}
+					}
+				}
+				break;
+			}
+		}
+	}
+}
+if(target_doc_id == "")
+{
+	return {"text":"Board not found for this chat."};
+}
+// 3) prepare final_allowed and normalized set
+final_allowed = List();
+norm_set = List();
+for each  existing in orig_allowed
+{
+	final_allowed.add(existing);
+	en = existing.toString().toLowerCase();
+	if(en != "" && !norm_set.contains(en))
+	{
+		norm_set.add(en);
+	}
+}
+// 4) process selections (EXTRACT CLEAN EMAIL, dedupe)
+added = 0;
+for each  s in selected
+{
+	sv = ifnull(s,"").toString().trim();
+	email_clean = "";
+	// Check if the submitted string is malformed (contains "value" from the option map logic)
+	if(sv.contains("value") && sv.contains("@"))
+	{
+		// *** CRITICAL CLEANUP FOR NEW SUBMISSIONS ***
+		// Extract the actual email from the end of the malformed string
+		email_clean = sv.subString(sv.lastIndexOf("value") + 5);
+	}
+	else if(sv.contains("@"))
+	{
+		// Simple case: assume the submitted string is already the clean email
+		email_clean = sv;
+	}
+	// Final aggressive sanitization to remove any non-email characters
+	email_clean = email_clean.replaceAll("[^A-Za-z0-9@._\\-]","");
+	if(email_clean == "")
+	{
+		continue;
+	}
+	nlower = email_clean.toLowerCase();
+	if(!norm_set.contains(nlower))
+	{
+		final_allowed.add(email_clean);
+		// <--- Adding the clean email string
+		norm_set.add(nlower);
+		added = added + 1;
+	}
+}
+// 5) build Firestore payload and patch allowed_users
+allowed_values = List();
+for each  u in final_allowed
+{
+	tmp = Map();
+	tmp.put("stringValue",u);
+	// <--- Guarantees only the plain email string 'u' is written
+	allowed_values.add(tmp);
+}
+arrVal = Map();
+arrVal.put("values",allowed_values);
+fVal = Map();
+fVal.put("arrayValue",arrVal);
+fields_update = Map();
+fields_update.put("allowed_users",fVal);
+payload = Map();
+payload.put("fields",fields_update);
+patch_url = ";
+try 
+{
+	invokeurl
+	[
+		url :patch_url
+		type :PATCH
+		parameters:payload.toString()
+		headers:{"Content-Type":"application/json"}
+	]
+}
+catch (e)
+{
+	return {"text":"Failed to update board: " + e.toString()};
+}
+return {"text":"✅ Sync complete. Added: " + added + "."};
