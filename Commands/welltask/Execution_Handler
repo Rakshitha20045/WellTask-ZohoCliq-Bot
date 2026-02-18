@@ -1,0 +1,164 @@
+
+response = Map();
+try 
+{
+	// -------------------------------
+	// USER + MODE
+	// -------------------------------
+	u_email = ifnull(user.get("email"),"");
+	u_id = ifnull(user.get("id"),"");
+	now = zoho.currenttime.toLong();
+	secret = "";
+	mode = "personal";
+	// default
+	board_id = u_id;
+	channel_id_param = "";
+	if(chat != null)
+	{
+		ctype = chat.get("type");
+		if(ctype == "channel" || ctype == "group" || ctype == "stream")
+		{
+			mode = "team";
+			board_id = chat.get("id");
+			channel_id_param = "&channelId=" + board_id;
+		}
+	}
+	// -------------------------------
+	// TOKEN
+	// -------------------------------
+	raw = u_email + "::" + u_id + "::" + now + "::" + secret;
+	token = zoho.encryption.base64Encode(raw);
+	final_url = ";
+	// -------------------------------
+	// PERSONAL MODE → NO PREVIEW
+	// -------------------------------
+	if(mode == "personal")
+	{
+		msg = "👤 *Your Personal WellTask Dashboard*\n\n";
+		msg = msg + "🔗 *Open Dashboard:*\n";
+		msg = msg + "[Click here to open your dashboard](" + final_url + ")";
+		response.put("text",msg);
+		return response;
+	}
+	// -------------------------------
+	// TEAM MODE → SHOW PREVIEW
+	// -------------------------------
+	project = "";
+	api = "";
+	url1 = ";
+	res = invokeurl
+	[
+		url :url1
+		type :GET
+	];
+	docFound = false;
+	// -------------------------------
+	// QUERY BY channel_id IF NOT FOUND
+	// -------------------------------
+	if(!res.containsKey("fields"))
+	{
+		query_url = ";
+		structuredQuery = Map();
+		fromList = List();
+		fromList.add({"collectionId":"boards"});
+		structuredQuery.put("from",fromList);
+		fieldFilter = Map();
+		fieldFilter.put("field",{"fieldPath":"channel_id"});
+		fieldFilter.put("op","EQUAL");
+		fieldFilter.put("value",{"stringValue":board_id});
+		whereMap = Map();
+		whereMap.put("fieldFilter",fieldFilter);
+		structuredQuery.put("where",whereMap);
+		bodyMap = Map();
+		bodyMap.put("structuredQuery",structuredQuery);
+		query_res = invokeurl
+		[
+			url :query_url
+			type :POST
+			body:bodyMap.toString()
+		];
+		for each  row in query_res
+		{
+			if(row.containsKey("document"))
+			{
+				res = row;
+				docFound = true;
+				break;
+			}
+		}
+	}
+	else
+	{
+		docFound = true;
+	}
+	preview = "🗂 *WellTask Board Preview*\n\n";
+	if(!docFound)
+	{
+		preview = preview + "ℹ️ No data found for this channel board.\n\n";
+		preview = preview + "🔗 *Open Dashboard:*\n";
+		preview = preview + "[Click here to open dashboard](" + final_url + ")";
+		response.put("text",preview);
+		return response;
+	}
+	fields = res.get("document").get("fields");
+	workspaces = List();
+	if(fields.containsKey("workspaces"))
+	{
+		workspaces = fields.get("workspaces").get("arrayValue").get("values");
+	}
+	projects = List();
+	if(fields.containsKey("projects"))
+	{
+		projects = fields.get("projects").get("arrayValue").get("values");
+	}
+	groups = List();
+	if(fields.containsKey("groups"))
+	{
+		groups = fields.get("groups").get("arrayValue").get("values");
+	}
+	tasks = List();
+	if(fields.containsKey("tasks"))
+	{
+		tasks = fields.get("tasks").get("arrayValue").get("values");
+	}
+	//  WORKSPACES
+	preview = preview + "📌 *Workspaces:*\n";
+	for each  ws in workspaces
+	{
+		w = ws.get("mapValue").get("fields");
+		preview = preview + "  ├─ " + w.get("name").get("stringValue") + "\n";
+	}
+	// PROJECTS
+	preview = preview + "\n📂 *Projects:*\n";
+	for each  p in projects
+	{
+		pm = p.get("mapValue").get("fields");
+		preview = preview + "  ├─ " + pm.get("name").get("stringValue") + "\n";
+	}
+	// GROUPS & TASKS
+	preview = preview + "\n📑 *Groups & Tasks:*\n\n";
+	for each  g in groups
+	{
+		gm = g.get("mapValue").get("fields");
+		gname = gm.get("name").get("stringValue");
+		gid = gm.get("id").get("stringValue");
+		preview = preview + "• *" + gname + "*\n";
+		for each  t in tasks
+		{
+			tm = t.get("mapValue").get("fields");
+			if(tm.get("groupId").get("stringValue") == gid)
+			{
+				preview = preview + "   ├─ " + tm.get("name").get("stringValue") + "\n";
+			}
+		}
+		preview = preview + "\n";
+	}
+	preview = preview + "\n🔗 *Open Dashboard:*\n";
+	preview = preview + "[Click here to open dashboard](" + final_url + ")";
+	response.put("text",preview);
+}
+catch (e)
+{
+	response.put("text","⚠️ Error: " + e.toString());
+}
+return response;
