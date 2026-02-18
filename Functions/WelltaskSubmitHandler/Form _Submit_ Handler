@@ -1,0 +1,444 @@
+
+// - Works for both personal & channel dashboards
+// 1. Read Form Values
+values = form.get("values");
+taskName = values.get("task_name");
+// ---- Workspace ID (if needed later) ----
+selectedWsId = "";
+try 
+{
+	selectedWsId = values.get("workspace_id").get("value");
+}
+catch (e_ws)
+{
+	selectedWsId = values.get("workspace_id");
+}
+// ---- Project ID ----
+selectedProjId = "";
+try 
+{
+	selectedProjId = values.get("project_id").get("value");
+}
+catch (e_p)
+{
+	selectedProjId = values.get("project_id");
+}
+// ---- Group / Column ID ----
+selectedGroupId = "";
+try 
+{
+	selectedGroupId = values.get("group_id").get("value");
+}
+catch (e_g)
+{
+	selectedGroupId = values.get("group_id");
+}
+// ---- Priority (default Medium) ----
+priority = "Medium";
+if(values.get("priority") != null)
+{
+	try 
+	{
+		priority = values.get("priority").get("value");
+	}
+	catch (e_pr)
+	{
+		priority = values.get("priority").toString();
+	}
+}
+// ---- Due Date ----
+dueDate = "";
+if(values.get("due_date") != null)
+{
+	try 
+	{
+		dueDate = values.get("due_date").get("date");
+	}
+	catch (e_dd)
+	{
+		dueDate = values.get("due_date").toString();
+	}
+}
+// ---- Assignee (supports dropdown + text) ----
+assigneeRaw = values.get("assignee");
+assigneeId = "";
+assigneeName = "";
+if(assigneeRaw != null && assigneeRaw != "")
+{
+	info "📥 Raw assignee value: " + assigneeRaw;
+	// Try: map {label:"", value:""}
+	try 
+	{
+		assigneeId = assigneeRaw.get("value").toString();
+		try 
+		{
+			assigneeName = assigneeRaw.get("label").toString();
+		}
+		catch (e_label1)
+		{
+			assigneeName = "";
+		}
+	}
+	catch (e_sel1)
+	{
+		// Try: list [ {label:"", value:""} ]
+		try 
+		{
+			firstOpt = assigneeRaw.get(0);
+			assigneeId = firstOpt.get("value").toString();
+			try 
+			{
+				assigneeName = firstOpt.get("label").toString();
+			}
+			catch (e_label2)
+			{
+				assigneeName = "";
+			}
+		}
+		catch (e_sel2)
+		{
+			// Fallback: plain text field
+			assigneeName = assigneeRaw.toString();
+		}
+	}
+	if(assigneeName == null || assigneeName == "")
+	{
+		assigneeName = assigneeId;
+	}
+}
+// 2. Basic Validation
+if(selectedProjId == "-1" || selectedGroupId == "-1")
+{
+	return {"type":"banner","text":"⚠️ Error: Please select a valid Project and Column.","status":"failure"};
+}
+// 3. Identify Board (personal vs channel)
+u_id = user.get("id");
+board_id = u_id;
+if(chat != null)
+{
+	if(chat.get("type") == "channel" || chat.get("type") == "group")
+	{
+		board_id = chat.get("id");
+	}
+}
+board_id = board_id.toString();
+// 4. Firestore: Get Existing Board Doc (current board)
+projectId = "";
+url = ";
+response = invokeurl
+[
+	url :url
+	type :GET
+];
+if(response.get("error") != null)
+{
+	info "⚠️ Firestore error while fetching board: " + response;
+	return {"type":"banner","text":"⚠️ Board not initialized. Please run /wellboard first.","status":"failure"};
+}
+fields = response.get("fields");
+// 5. Create New Task Object (for current board)
+taskId = zoho.currenttime.toLong() + "";
+newTaskFields = Map();
+newTaskFields.put("id",{"stringValue":taskId});
+newTaskFields.put("name",{"stringValue":taskName});
+newTaskFields.put("priority",{"stringValue":priority});
+newTaskFields.put("status",{"stringValue":"Not Started"});
+newTaskFields.put("projectId",{"stringValue":selectedProjId});
+newTaskFields.put("groupId",{"stringValue":selectedGroupId});
+newTaskFields.put("dueDate",{"stringValue":dueDate});
+// Assignee (store name + zoho_id map if available)
+if(assigneeName != null && assigneeName != "")
+{
+	assigneeFields = Map();
+	assigneeFields.put("name",{"stringValue":assigneeName});
+	if(assigneeId != "")
+	{
+		assigneeFields.put("zoho_id",{"stringValue":assigneeId});
+	}
+	assigneeMap = Map();
+	assigneeMap.put("fields",assigneeFields);
+	newTaskFields.put("assignee",{"mapValue":assigneeMap});
+}
+else
+{
+	newTaskFields.put("assignee",{"nullValue":null});
+}
+newTask = Map();
+newTask.put("mapValue",{"fields":newTaskFields});
+// 6. Append to Current Board's Tasks Array
+currentTasks = List();
+if(fields.get("tasks") != null && fields.get("tasks").get("arrayValue") != null && fields.get("tasks").get("arrayValue").get("values") != null)
+{
+	currentTasks = fields.get("tasks").get("arrayValue").get("values");
+}
+currentTasks.add(newTask);
+// 7. PATCH Back to Firestore (current board)
+updateFields = Map();
+updateFields.put("tasks",{"arrayValue":{"values":currentTasks}});
+updatePayload = Map();
+updatePayload.put("fields",updateFields);
+patchUrl = url + "?updateMask.fieldPaths=tasks";
+saveResponse = invokeurl
+[
+	url :patchUrl
+	type :PATCH
+	parameters:updatePayload.toString()
+	headers:{"Content-Type":"application/json"}
+];
+// 8. EXTRA: Copy task into assignee's personal board
+//    under a fixed "Assigned to Me" project/column
+if(assigneeId != null && assigneeId != "")
+{
+	try 
+	{
+		assignedWsId = "assigned_me_ws";
+		assignedWsName = "Assigned to Me";
+		assignedProjId = "assigned_me_project";
+		assignedProjName = "Assigned Tasks";
+		assignedGroupId = "assigned_me_group_todo";
+		assignedGroupName = "Assigned - To Do";
+		personalBoardId = assigneeId.toString();
+		pUrl = "https://firestore.googleapis.com/v1/projects/" + projectId + "/databases/(default)/documents/boards/" + personalBoardId;
+		pResp = invokeurl
+		[
+			url :pUrl
+			type :GET
+		];
+		pFields = Map();
+		if(pResp.get("error") == null && pResp.get("fields") != null)
+		{
+			pFields = pResp.get("fields");
+		}
+		else
+		{
+			pFields = Map();
+		}
+		// ---------- Ensure WORKSPACES ----------
+		wsValues = List();
+		if(pFields.get("workspaces") != null && pFields.get("workspaces").get("arrayValue") != null && pFields.get("workspaces").get("arrayValue").get("values") != null)
+		{
+			wsValues = pFields.get("workspaces").get("arrayValue").get("values");
+		}
+		wsExists = false;
+		for each  w in wsValues
+		{
+			wData = w.get("mapValue").get("fields");
+			if(wData.get("id").get("stringValue") == assignedWsId)
+			{
+				wsExists = true;
+			}
+		}
+		if(wsExists == false)
+		{
+			wsFields = Map();
+			wsFields.put("id",{"stringValue":assignedWsId});
+			wsFields.put("name",{"stringValue":assignedWsName});
+			wsMapVal = Map();
+			wsMapVal.put("fields",wsFields);
+			wsValue = Map();
+			wsValue.put("mapValue",wsMapVal);
+			wsValues.add(wsValue);
+		}
+		wsArrayVal = Map();
+		wsArrayVal.put("values",wsValues);
+		pFields.put("workspaces",{"arrayValue":wsArrayVal});
+		// ---------- Ensure PROJECT ----------
+		projValues = List();
+		if(pFields.get("projects") != null && pFields.get("projects").get("arrayValue") != null && pFields.get("projects").get("arrayValue").get("values") != null)
+		{
+			projValues = pFields.get("projects").get("arrayValue").get("values");
+		}
+		projExists = false;
+		for each  p in projValues
+		{
+			pData = p.get("mapValue").get("fields");
+			if(pData.get("id").get("stringValue") == assignedProjId)
+			{
+				projExists = true;
+			}
+		}
+		if(projExists == false)
+		{
+			pjFields = Map();
+			pjFields.put("id",{"stringValue":assignedProjId});
+			pjFields.put("name",{"stringValue":assignedProjName});
+			pjFields.put("workspaceId",{"stringValue":assignedWsId});
+			pjFields.put("color",{"stringValue":"bg-blue-500"});
+			pjMapVal = Map();
+			pjMapVal.put("fields",pjFields);
+			pjValue = Map();
+			pjValue.put("mapValue",pjMapVal);
+			projValues.add(pjValue);
+		}
+		projArrayVal = Map();
+		projArrayVal.put("values",projValues);
+		pFields.put("projects",{"arrayValue":projArrayVal});
+		// ---------- Ensure GROUP/COLUMN ----------
+		groupValues = List();
+		if(pFields.get("groups") != null && pFields.get("groups").get("arrayValue") != null && pFields.get("groups").get("arrayValue").get("values") != null)
+		{
+			groupValues = pFields.get("groups").get("arrayValue").get("values");
+		}
+		groupExists = false;
+		for each  g in groupValues
+		{
+			gData = g.get("mapValue").get("fields");
+			if(gData.get("id").get("stringValue") == assignedGroupId)
+			{
+				groupExists = true;
+			}
+		}
+		if(groupExists == false)
+		{
+			// Default columns: Task, Assignee, Priority, Status, Due Date
+			cols = List();
+			// Task
+			c1Fields = Map();
+			c1Fields.put("id",{"stringValue":"task"});
+			c1Fields.put("name",{"stringValue":"Task"});
+			c1Fields.put("isDefault",{"booleanValue":true});
+			c1MapVal = Map();
+			c1MapVal.put("fields",c1Fields);
+			c1Value = Map();
+			c1Value.put("mapValue",c1MapVal);
+			cols.add(c1Value);
+			// Assignee
+			c2Fields = Map();
+			c2Fields.put("id",{"stringValue":"assignee"});
+			c2Fields.put("name",{"stringValue":"Assignee"});
+			c2Fields.put("isDefault",{"booleanValue":true});
+			c2MapVal = Map();
+			c2MapVal.put("fields",c2Fields);
+			c2Value = Map();
+			c2Value.put("mapValue",c2MapVal);
+			cols.add(c2Value);
+			// Priority
+			c3Fields = Map();
+			c3Fields.put("id",{"stringValue":"priority"});
+			c3Fields.put("name",{"stringValue":"Priority"});
+			c3Fields.put("isDefault",{"booleanValue":true});
+			c3MapVal = Map();
+			c3MapVal.put("fields",c3Fields);
+			c3Value = Map();
+			c3Value.put("mapValue",c3MapVal);
+			cols.add(c3Value);
+			// Status
+			c4Fields = Map();
+			c4Fields.put("id",{"stringValue":"status"});
+			c4Fields.put("name",{"stringValue":"Status"});
+			c4Fields.put("isDefault",{"booleanValue":true});
+			c4MapVal = Map();
+			c4MapVal.put("fields",c4Fields);
+			c4Value = Map();
+			c4Value.put("mapValue",c4MapVal);
+			cols.add(c4Value);
+			// Due Date
+			c5Fields = Map();
+			c5Fields.put("id",{"stringValue":"duedate"});
+			c5Fields.put("name",{"stringValue":"Due Date"});
+			c5Fields.put("isDefault",{"booleanValue":true});
+			c5MapVal = Map();
+			c5MapVal.put("fields",c5Fields);
+			c5Value = Map();
+			c5Value.put("mapValue",c5MapVal);
+			cols.add(c5Value);
+			colsArrayVal = Map();
+			colsArrayVal.put("values",cols);
+			gFields = Map();
+			gFields.put("id",{"stringValue":assignedGroupId});
+			gFields.put("name",{"stringValue":assignedGroupName});
+			gFields.put("projectId",{"stringValue":assignedProjId});
+			gFields.put("collapsed",{"booleanValue":false});
+			gFields.put("columns",{"arrayValue":colsArrayVal});
+			gMapVal = Map();
+			gMapVal.put("fields",gFields);
+			gValue = Map();
+			gValue.put("mapValue",gMapVal);
+			groupValues.add(gValue);
+		}
+		groupArrayVal = Map();
+		groupArrayVal.put("values",groupValues);
+		pFields.put("groups",{"arrayValue":groupArrayVal});
+		// ---------- Add PERSONAL TASK ----------
+		pTasks = List();
+		if(pFields.get("tasks") != null && pFields.get("tasks").get("arrayValue") != null && pFields.get("tasks").get("arrayValue").get("values") != null)
+		{
+			pTasks = pFields.get("tasks").get("arrayValue").get("values");
+		}
+		// Build personal task fields (copy from newTaskFields but override proj/group)
+		pTaskFields = Map();
+		pTaskFields.put("id",newTaskFields.get("id"));
+		pTaskFields.put("name",newTaskFields.get("name"));
+		pTaskFields.put("priority",newTaskFields.get("priority"));
+		pTaskFields.put("status",newTaskFields.get("status"));
+		pTaskFields.put("dueDate",newTaskFields.get("dueDate"));
+		pTaskFields.put("assignee",newTaskFields.get("assignee"));
+		// Override project/group for personal board
+		pTaskFields.put("projectId",{"stringValue":assignedProjId});
+		pTaskFields.put("groupId",{"stringValue":assignedGroupId});
+		pTaskMapVal = Map();
+		pTaskMapVal.put("fields",pTaskFields);
+		pTaskValue = Map();
+		pTaskValue.put("mapValue",pTaskMapVal);
+		pTasks.add(pTaskValue);
+		pTasksArrayVal = Map();
+		pTasksArrayVal.put("values",pTasks);
+		pFields.put("tasks",{"arrayValue":pTasksArrayVal});
+		// Save entire fields back
+		pUpdatePayload = Map();
+		pUpdatePayload.put("fields",pFields);
+		pSave = invokeurl
+		[
+			url :pUrl
+			type :PATCH
+			parameters:pUpdatePayload.toString()
+			headers:{"Content-Type":"application/json"}
+		];
+	}
+	catch (e_pb)
+	{
+		info "❌ Error while syncing to personal board: " + e_pb.toString();
+	}
+}
+// ============================================================
+// 9. EXTRA: Send DM to assignee in Cliq
+//    (Skip if assignee is the same as current user)
+// ============================================================
+if(assigneeId != null && assigneeId != "")
+{
+	try 
+	{
+		currentUserId = user.get("id").toString();
+		if(assigneeId == currentUserId)
+		{
+			info "ℹ️ Assignee is the same as current user. Skipping DM to avoid self-message restriction.";
+		}
+		else
+		{
+			dueText = "Not set";
+			if(dueDate != null && dueDate != "")
+			{
+				dueText = dueDate;
+			}
+			assignerName = user.get("first_name");
+			if(user.get("last_name") != null)
+			{
+				assignerName = assignerName + " " + user.get("last_name");
+			}
+			msgMap = Map();
+			msgText = "✅ *New Task Assigned to You*\n\n";
+			msgText = msgText + "*Task*: " + taskName + "\n";
+			msgText = msgText + "*Priority*: " + priority + "\n";
+			msgText = msgText + "*Due Date*: " + dueText + "\n";
+			msgText = msgText + "*Assigned by*: " + assignerName;
+			msgMap.put("text",msgText);
+			notifyResp = zoho.cliq.postToUser(assigneeId,msgMap);
+		}
+	}
+	catch (e_dm)
+	{
+		info "❌ Error while sending DM to assignee: " + e_dm.toString();
+	}
+}
+// 10. Success Banner
+return {"type":"banner","text":"✅ Task added successfully!","status":"success"};
