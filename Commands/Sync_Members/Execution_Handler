@@ -1,0 +1,99 @@
+
+project_id = "";
+api_key = "";
+collection_name = "";
+// ✅ Triggered when user runs: /syncmembers
+// 1️⃣ Identify chat where command was executed
+chat_id = chat.get("id");
+chat_name = if(chat.containsKey("name"),chat.get("name"),chat_id.toString());
+// 2️⃣ Fetch current channel members
+members_url = "https://cliq.zoho.com/api/v2/chats/" + chat_id.toString() + "/members";
+members_response = invokeurl
+[
+	url :members_url
+	type :GET
+	connection:"cliq_access"
+];
+members_list = members_response.get("members");
+if(members_list == null)
+{
+	members_list = List();
+}
+// Track current channel user IDs
+current_ids = List();
+synced_count = 0;
+// 3️⃣ UPSERT members into Firestore
+for each  m in members_list
+{
+	if(m.get("user_role") == "bot")
+	{
+		continue;
+	}
+	user_id = m.get("user_id");
+	if(user_id == null)
+	{
+		continue;
+	}
+	current_ids.add(user_id);
+	email = ifnull(m.get("email_id"),"");
+	full_name = ifnull(m.get("name"),"");
+	role = ifnull(m.get("user_role"),"Member");
+	fields = Map();
+	fields.put("name",{"stringValue":full_name});
+	fields.put("email",{"stringValue":email});
+	fields.put("zoho_id",{"stringValue":user_id});
+	fields.put("role",{"stringValue":role});
+	fields.put("chat_id",{"stringValue":chat_id.toString()});
+	firestore_data = Map();
+	firestore_data.put("fields",fields);
+	firebase_url = ";
+	firebase_response = invokeurl
+	[
+		url :firebase_url
+		type :PATCH
+		parameters:firestore_data.toString()
+	];
+	synced_count = synced_count + 1;
+}
+// 4️⃣ DELETE users who left the channel
+deleted_count = 0;
+list_url = ";
+list_response = invokeurl
+[
+	url :list_url
+	type :GET
+];
+if(list_response.containsKey("documents"))
+{
+	docs = list_response.get("documents");
+	for each  d in docs
+	{
+		fields_map = d.get("fields");
+		if(fields_map != null && fields_map.containsKey("chat_id"))
+		{
+			stored_chat_id = fields_map.get("chat_id").get("stringValue");
+			if(stored_chat_id == chat_id.toString())
+			{
+				stored_user_id = fields_map.get("zoho_id").get("stringValue");
+				if(!current_ids.contains(stored_user_id))
+				{
+					// Extract Firestore document ID safely (no split needed)
+					doc_full = d.get("name").toString();
+					lastSlash = doc_full.lastIndexOf("/");
+					doc_id = doc_full.substring(lastSlash + 1,doc_full.length());
+					delete_url = ";
+					delete_response = invokeurl
+					[
+						url :delete_url
+						type :DELETE
+					];
+					deleted_count = deleted_count + 1;
+				}
+			}
+		}
+	}
+}
+// ✅ Final confirmation message
+resp_map = Map();
+resp_map.put("text","✅ Sync complete for this chat! Added/updated: " + synced_count + ", removed: " + deleted_count + ".");
+return resp_map;
