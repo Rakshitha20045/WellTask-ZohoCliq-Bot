@@ -39,24 +39,56 @@ Before granting dashboard access, WellTask performs identity verification and se
 
 ## 📊 Smart Dashboard Access – `/welltask`
 
-WellTask provides **dual dashboard modes** depending on context.
+WellTask intelligently detects context and opens the correct dashboard automatically.
 
-### 👤 Personal Mode (Bot Chat)
-- Personal Task Manager
-- Focus Hub
-- Individual analytics
+---
 
-### 👥 Team Mode (Channel)
-- Team Task Dashboard
-- Role-based access control
+### 👤 Personal Bot Mode
 
-### 🔄 Views Available
-- **Kanban View**
-- **List View**
+When you type `/welltask` inside the **WellTask personal bot chat**:
 
-Both views allow dynamic task tracking and structured workflow management.
+- Your **Personal Dashboard** opens instantly
+- Shortcut menus are available (no need to type commands repeatedly)
+- Quick-access buttons allow instant navigation
+- Fully interactive widget-based interface
+
+You simply click — no repeated typing required.
+
+---
+
+### 👥 Channel Mode
+
+You can add the WellTask bot to any specific Zoho Cliq channel.
+
+Once added:
+
+- All team features become accessible inside the channel
+- Members can collaborate in real-time
+- Tasks sync across shared dashboards
+
+When you type `/welltask` inside a channel:
+
+- It opens the **Shared Team Dashboard**
+- Displays a **short preview overview**
+- Provides button to open full dashboard
+- Maintains role-based access control
+
+---
+
+### 🔄 Available Views
+
+- **Kanban View** (Column-based workflow tracking)
+- **List View** (Structured task listing)
+
+Users can switch between both views dynamically.
+
+---
+
+### 🖼 Dashboard Preview (Personal & Channel Modes)
 
 <div align="center" style="overflow-x: auto; white-space: nowrap;">
+  <img src="https://i.ibb.co/GQzgmw92/Screenshot-2026-02-18-131411.png" width="450"/>
+  <img src="https://i.ibb.co/DffB3743/persoanl-channel-1.png" width="450"/>
   <img src="https://i.ibb.co/d4k5GfbF/Screenshot-2025-11-30-130301.png" width="450"/>
   <img src="https://i.ibb.co/DPN5vbyX/Screenshot-2025-11-30-125540.png" width="450"/>
 </div>
