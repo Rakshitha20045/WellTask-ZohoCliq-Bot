@@ -179,6 +179,64 @@ When `/addtask` is used in personal bot chat:
 </div>
 
 ---
+## 👥 Automated Member Sync & Access Control
+
+WellTask maintains strict access control to ensure that only valid channel members can view and interact with shared dashboards.
+
+If a specific channel member is not officially synced, they will not receive project updates or access dashboard data. This prevents unauthorized visibility.
+
+---
+
+### 3️⃣ Automatic Admin Sync & Member Removal
+
+- When the bot is added to a channel, the **Admin is automatically synced**.
+- A dropdown appears showing all other members who need to be synced.
+- Only synced members are stored in Firebase (`allowed_user` system).
+- If a member leaves or is removed from the channel:
+  - A scheduled daily check at **9:30 AM** automatically removes them from `allowed_user`.
+  - They are removed from dashboard access.
+  - They are removed from the Assign-To dropdown.
+  - They no longer receive task updates.
+
+This ensures only live channel members remain authorized.
+
+---
+
+### 4️⃣ `/syncmembers` – Manual Refresh for New Members
+
+- Channel admins can type `/syncmembers` anytime.
+- The command shows a dropdown containing **only new members** who are not yet synced.
+- Removed users are automatically excluded.
+- Firebase is updated in real-time with valid members only.
+- If all users are already synced, the bot displays:
+  > "No new members to sync."
+
+This ensures secure and regularly updated membership validation.
+
+---
+
+### 🔐 Firebase-Backed Member Validation
+
+WellTask continuously updates Firebase to store only active channel members.
+
+Advantages:
+- Prevents unauthorized access
+- Keeps Assign-To dropdown clean
+- Maintains accurate team visibility
+- Ensures secure data boundaries
+
+---
+
+### 🖼 Member Sync & Security Flow
+
+<div align="center" style="overflow-x: auto; white-space: nowrap;">
+  <img src="https://i.ibb.co/4ZRCD4Zd/firebase.png" width="420"/>
+  <img src="https://i.ibb.co/vxtX0hxs/sync-mem-auto-bot.png" width="420"/>
+  <img src="https://i.ibb.co/m5qTzSfw/bot-added.png" width="420"/>
+  <img src="https://i.ibb.co/TMR5G3L5/remove-add-sync-mem.png" width="420"/>
+</div>
+
+---
 
 ## 🚨 Smart Alerts & Daily Task Intelligence
 
@@ -229,9 +287,6 @@ This feature helps users:
 Powered by scheduled automation and backend cron logic.
 
 ---
-
-
-
 
 ## 🎯 Focus Hub – Pomodoro Productivity Engine
 
