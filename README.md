@@ -20,6 +20,17 @@ It integrates dashboards, Pomodoro-based focus tracking, automated alerts, and a
 Built with real-time architecture and secure access validation.
 
 ---
+
+## ✨ Core Capabilities
+
+- Context-aware dashboards (Personal + Team)
+- Real-time task synchronization
+- Firebase-backed secure member validation
+- Automated deadline intelligence
+- Pomodoro-based Focus Engine
+- Daily task briefing automation
+---
+
 ## 🧭 User Onboarding & Help System
 
 <img src="https://i.ibb.co/JwsSk05F/help.png" width="500"/>
