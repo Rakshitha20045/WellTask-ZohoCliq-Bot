@@ -288,23 +288,75 @@ Powered by scheduled automation and backend cron logic.
 
 ---
 
-## 🎯 Focus Hub – Pomodoro Productivity Engine
+## 🎯 Focus Hub – Real-Time Pomodoro Productivity Engine
 
-<img src="https://i.ibb.co/MYx751W/Screenshot-2025-11-30-125610.png" width="900"/>
-<img src="https://i.ibb.co/WW5NGcB3/Screenshot-2025-11-30-125630.png" width="900"/>
+WellTask includes a fully integrated Focus Hub designed for distraction-free productivity.
 
-A fully integrated focus tracking system designed to boost productivity.
-
-### Features
-- Customizable focus duration
-- Short & long break configuration
-- Real-time "Focus Started" notifications
-- Automated break alerts
-- Skip break / Complete early options
-- Break time excluded from productivity metrics
-- Restorable completed tasks
+Users only need to **start the session from the Focus Hub dashboard** — all remaining workflow logic is automatically handled inside Zoho Cliq bot in the background.
 
 ---
+
+### 🚀 How It Works
+
+- Start Focus Session from Focus Hub
+- Real-time "Focus Started" notification
+- Timer runs in the background
+- Fully non-distractive workflow
+
+All updates reflect instantly inside the Focus Hub dashboard.
+
+---
+
+### ⏳ Break & Session Controls
+
+Users can:
+
+- Take Break
+- Skip Break
+- Finish Early
+
+When **Break** is clicked:
+
+- Break timer starts automatically
+- Timer duration follows customized break settings
+- Runs completely in background
+- No manual intervention required
+
+All actions update the Focus Hub dashboard in real-time.
+
+---
+
+### ⚙️ Customizable Settings
+
+- Focus duration configurable
+- Short break duration configurable
+- Long break duration configurable
+- Break time excluded from productivity metrics
+- Completed tasks restorable anytime
+
+Everything runs based on personalized configurations.
+
+---
+
+### 🔄 Real-Time Updates
+
+- Session state updates instantly
+- Dashboard reflects timer state
+- Background automation handles transitions
+- No interruption to channel workflow
+
+---
+
+### 🖼 Focus Hub Interface
+
+<div align="center" style="overflow-x: auto; white-space: nowrap;">
+  <img src="https://i.ibb.co/MYx751W/Screenshot-2025-11-30-125610.png" width="420"/>
+  <img src="https://i.ibb.co/WW5NGcB3/Screenshot-2025-11-30-125630.png" width="420"/>
+  <img src="https://i.ibb.co/ycq47Ny7/focus-hub-break.png" width="420"/>
+</div>
+
+---
+
 
 ## 📈 Productivity Analytics
 
