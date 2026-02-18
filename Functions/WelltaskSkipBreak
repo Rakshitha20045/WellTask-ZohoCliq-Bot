@@ -1,0 +1,37 @@
+
+response = Map();
+// 1. Get User ID
+userId = user.get("id");
+// 2. Prepare URL
+url = "";
+// 3. Generate unique command ID
+cmdId = zoho.currenttime.toLong().toString();
+// 4. Construct Payload
+payload = Map();
+fields = Map();
+fields.put("command",{"stringValue":"SKIP_BREAK"});
+fields.put("commandId",{"stringValue":cmdId});
+payload.put("fields",fields);
+headers = Map();
+headers.put("Content-Type","application/json");
+// 5. Invoke Firestore API
+try 
+{
+	resp = invokeurl
+	[
+		url :url
+		type :PATCH
+		parameters:payload.toString()
+		headers:headers
+	];
+}
+catch (e)
+{
+	info "ERROR: [WelltaskSkipBreak] API Call Failed: " + e.toString();
+}
+// 6. Update Chat UI
+// CHANGED TO BANNER TO PREVENT TECHNICAL ERRORS
+response.put("text","🚀 Break skipped. Back to work!");
+response.put("type","banner");
+response.put("status","success");
+return response;
