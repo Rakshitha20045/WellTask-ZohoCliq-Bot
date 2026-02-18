@@ -21,7 +21,7 @@ Built with real-time architecture and secure access validation.
 
 ---
 
-## ✨ Core Capabilities
+## ✨ Key features
 
 - Context-aware dashboards (Personal + Team)
 - Real-time task synchronization
