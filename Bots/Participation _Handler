@@ -1,0 +1,174 @@
+
+// participationHandler (normalized + dedupe when building options)
+info "DEBUG: participationHandler invoked. operation = " + operation;
+// --- FIREBASE CONFIG ---
+project_id = "";
+api_key = "";
+// -------------------------
+if(operation == "added")
+{
+	chat_id = chat.get("id");
+	// 1) READ existing allowed_users from Firestore and build a normalized set
+	existing_emails = List();
+	// cleaned originals (for debugging if required)
+	existing_emails_norm = List();
+	// normalized (lowercase trimmed) for comparisons
+	boards_url = ";
+	boards_resp = Map();
+	try 
+	{
+		boards_resp = invokeurl
+		[
+			url :boards_url
+			type :GET
+		];
+	}
+	catch (e)
+	{
+		info "WARN: Boards query failed: " + e.toString();
+		boards_resp = Map();
+	}
+	if(boards_resp.containsKey("documents") && boards_resp.get("documents") != null)
+	{
+		for each  d in boards_resp.get("documents")
+		{
+			fields = d.get("fields");
+			if(fields != null && fields.containsKey("channel_id"))
+			{
+				ch_val = fields.get("channel_id").get("stringValue");
+				if(ch_val == chat_id.toString())
+				{
+					if(fields.containsKey("allowed_users"))
+					{
+						au = fields.get("allowed_users");
+						if(au.containsKey("arrayValue") && au.get("arrayValue").containsKey("values"))
+						{
+							vals_db = au.get("arrayValue").get("values");
+							for each  v in vals_db
+							{
+								if(v.containsKey("stringValue"))
+								{
+									raw_db_val = ifnull(v.get("stringValue"),"").toString();
+									// clean original (remove stray quotes)
+									cleaned_original = raw_db_val.replaceAll("\"","").trim();
+									// normalized comparison form
+									db_norm = cleaned_original.toLowerCase();
+									if(db_norm != "" && !existing_emails_norm.contains(db_norm))
+									{
+										existing_emails.add(cleaned_original);
+										existing_emails_norm.add(db_norm);
+									}
+								}
+							}
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+	info "DEBUG: Found existing members (normalized): " + existing_emails_norm;
+	// 2) FETCH CLIQ CHANNEL MEMBERS
+	members_url = "https://cliq.zoho.com/api/v2/chats/" + chat_id + "/members";
+	members_resp = Map();
+	try 
+	{
+		members_resp = invokeurl
+		[
+			url :members_url
+			type :GET
+			connection:"cliq_access"
+		];
+	}
+	catch (e)
+	{
+		info "ERROR: Could not fetch channel members: " + e.toString();
+		return null;
+	}
+	members_list = members_resp.get("members");
+	if(members_list == null)
+	{
+		members_list = List();
+	}
+	// 3) BUILD OPTIONS list for the form (skip already existing using normalized compare)
+	options = List();
+	for each  mm in members_list
+	{
+		nm = ifnull(mm.get("name"),"Unknown");
+		em = ifnull(mm.get("email_id"),"");
+		uid_val = mm.get("user_id");
+		user_role_val = mm.get("user_role");
+		// construct a raw value (prefer email; fallback to uid)
+		raw_val = "";
+		if(em != "")
+		{
+			raw_val = em.toString();
+		}
+		else if(uid_val != null)
+		{
+			raw_val = uid_val.toString();
+		}
+		else
+		{
+			raw_val = "";
+		}
+		// clean & normalize for comparison
+		cleaned_val = raw_val.replaceAll("\"","").trim();
+		norm_val = cleaned_val.toLowerCase();
+		// Skip if bot or missing id/email
+		if(user_role_val == "bot")
+		{
+			continue;
+		}
+		if(cleaned_val == "")
+		{
+			continue;
+		}
+		// Skip if already present in firestore (normalized)
+		if(existing_emails_norm.contains(norm_val))
+		{
+			continue;
+		}
+		// Build option label and value (store cleaned original as value)
+		label_txt = nm;
+		if(em != "")
+		{
+			label_txt = label_txt + " (" + cleaned_val + ")";
+		}
+		opt_map = Map();
+		opt_map.put("label",label_txt);
+		opt_map.put("value",cleaned_val);
+		options.add(opt_map);
+	}
+	// 4) If nothing to sync, exit
+	if(options.size() == 0)
+	{
+		info "DEBUG: All members already synced or no valid members to add.";
+		return null;
+	}
+	// 5) BUILD FORM (include placeholder required key)
+	input_map = Map();
+	input_map.put("type","select");
+	input_map.put("name","allowed_users");
+	input_map.put("label","Select New Members");
+	input_map.put("multiple",true);
+	input_map.put("options",options);
+	input_map.put("mandatory",true);
+	input_map.put("placeholder","Select members to add");
+	inputs = List();
+	inputs.add(input_map);
+	action_map = Map();
+	action_map.put("type","invoke.function");
+	action_map.put("name","welltaskSyncFormSubmit");
+	form_map = Map();
+	form_map.put("type","form");
+	form_map.put("title","Sync New Members");
+	form_map.put("name","welltaskSyncForm");
+	form_map.put("version",1);
+	form_map.put("button_label","Sync Members");
+	form_map.put("inputs",inputs);
+	form_map.put("action",action_map);
+	info "DEBUG: form_map payload: " + form_map.toString();
+	return form_map;
+}
+return null;
