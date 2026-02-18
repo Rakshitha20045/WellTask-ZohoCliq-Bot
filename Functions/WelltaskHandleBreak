@@ -1,0 +1,32 @@
+
+response = Map();
+userId = user.get("id");
+url = "";
+// Unique ID to force the HTML to notice the change
+cmdId = zoho.currenttime.toLong().toString();
+payload = Map();
+fields = Map();
+fields.put("command",{"stringValue":"TAKE_BREAK"});
+fields.put("commandId",{"stringValue":cmdId});
+payload.put("fields",fields);
+headers = Map();
+headers.put("Content-Type","application/json");
+try 
+{
+	resp = invokeurl
+	[
+		url :url
+		type :PATCH
+		parameters:payload.toString()
+		headers:headers
+	];
+}
+catch (e)
+{
+	info "ERROR: " + e;
+}
+// Banner feedback (Green toast)
+response.put("text","☕ Break started! Timer is running in Focus Hub.");
+response.put("type","banner");
+response.put("status","success");
+return response;
