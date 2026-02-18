@@ -23,7 +23,7 @@ Built with real-time architecture and secure access validation.
 
 ## 🔐 Secure Access & Identity Verification
 
-<img src="PASTE_DIRECT_SECURITY_IMAGE_LINK_HERE" width="900"/>
+<img src="https://i.ibb.co/1tPgCzzJ/welltask-security-check.png" width="900"/>
 
 Before granting dashboard access, WellTask performs identity verification and secure access validation.
 
